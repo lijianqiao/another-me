@@ -85,7 +85,8 @@ pub struct AIGateway {
 impl AIGateway {
     pub fn new(config: AIGatewayConfig) -> Self {
         let client = Client::builder()
-            .timeout(Duration::from_secs(180))
+            .connect_timeout(Duration::from_secs(10))
+            .timeout(Duration::from_secs(600))
             .build()
             .expect("构建 HTTP client 失败");
 

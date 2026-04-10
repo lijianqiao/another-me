@@ -10,10 +10,12 @@ use crate::types::emotion::EmotionDimensions;
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum TimelineType {
-    /// 现实线（稳健型）
+    /// 稳健型（最接近现实的推演）
     Reality,
-    /// 平行线（转折型 / 极端型）
+    /// 转折型（有明显人生分岔）
     Parallel,
+    /// 极端型（大起大落的命运线）
+    Extreme,
 }
 
 impl TimelineType {
@@ -21,6 +23,7 @@ impl TimelineType {
         match self {
             Self::Reality => "reality",
             Self::Parallel => "parallel",
+            Self::Extreme => "extreme",
         }
     }
 }

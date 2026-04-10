@@ -80,7 +80,7 @@ export interface DimensionScore {
   satisfaction: number;
 }
 
-export type TimelineType = "reality" | "parallel";
+export type TimelineType = "reality" | "parallel" | "extreme";
 
 export interface Timeline {
   id: string;

@@ -39,7 +39,7 @@
     "black_swan_hint": "小概率的极端事件将可能注入推演",
     "start": "开始推演",
     "loading_tip": "推演引擎正在工作中...",
-    "loading_hint": "推演通常需要 30-120 秒"
+    "loading_hint": "推演通常需要 60-180 秒（5 次并发推演 + 聚类）"
   },
   "results": {
     "title": "推演结果",
@@ -48,6 +48,10 @@
     "go_simulate": "去推演",
     "timeline": "时间线",
     "key_events": "关键事件",
+    "type_reality": "稳健型",
+    "type_parallel": "转折型",
+    "type_extreme": "极端型",
+    "black_swan_label": "黑天鹅",
     "emotions": "情绪维度",
     "dark_warning": "本次推演包含较为沉重的内容。这只是众多可能性中的一种，不代表实际的未来。",
     "recovery_tip": "推演中检测到多个情绪维度偏低。记住，真实的人生总有转机，AI 推演只是一种参考。如果你感到不安，可以和朋友聊聊。",

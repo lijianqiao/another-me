@@ -47,6 +47,13 @@ class RealismChecker:
         Returns:
             现实主义检查结果
         """
+        if not narrative or not narrative.strip():
+            return RealismCheckResult(
+                status=RealismStatus.BALANCED,
+                positivity_ratio=0.5,
+                suggestion=None,
+            )
+
         sentences = SnowNLP(narrative).sentences
         positive_count = 0
         negative_count = 0

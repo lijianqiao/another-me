@@ -39,7 +39,7 @@
     "black_swan_hint": "Low-probability extreme events may be injected",
     "start": "Start Simulation",
     "loading_tip": "Simulation engine is working...",
-    "loading_hint": "Typically takes 30-120 seconds"
+    "loading_hint": "Typically takes 60-180 seconds (5 concurrent runs + clustering)"
   },
   "results": {
     "title": "Simulation Results",
@@ -48,6 +48,10 @@
     "go_simulate": "Start Simulation",
     "timeline": "Timeline",
     "key_events": "Key Events",
+    "type_reality": "Steady",
+    "type_parallel": "Turning Point",
+    "type_extreme": "Extreme",
+    "black_swan_label": "Black Swan",
     "emotions": "Emotions",
     "dark_warning": "This simulation contains heavy content. It's just one of many possibilities.",
     "recovery_tip": "Multiple emotion dimensions are low. Remember, real life always has turning points. AI simulation is just a reference. Talk to a friend if you feel uneasy.",
