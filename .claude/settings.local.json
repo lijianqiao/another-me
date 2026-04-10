@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install:*)",
+      "Bash(cargo check:*)",
+      "Bash(pnpm exec:*)"
+    ]
+  }
+}

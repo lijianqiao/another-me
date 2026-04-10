@@ -1,0 +1,32 @@
+{
+  "app": {
+    "title": "另一个我",
+    "tagline": "每个人生选择的背后，都有一条被放弃的时间线。"
+  },
+  "nav": {
+    "home": "主页",
+    "simulate": "新推演",
+    "history": "历史",
+    "lifemap": "人生地图",
+    "settings": "设置"
+  },
+  "home": {
+    "welcome": "欢迎回来",
+    "first_visit": "看起来这是你第一次来，我想先认识一下你。",
+    "start_onboarding": "开始了解我",
+    "start_simulation": "开始一次推演"
+  },
+  "onboarding": {
+    "title": "在开始之前，我想了解一下你",
+    "next": "下一步",
+    "previous": "上一步",
+    "finish": "记住我了"
+  },
+  "common": {
+    "loading": "加载中…",
+    "retry": "重试",
+    "cancel": "取消",
+    "save": "保存",
+    "error": "出错了"
+  }
+}

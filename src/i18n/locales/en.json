@@ -1,0 +1,32 @@
+{
+  "app": {
+    "title": "Another Me",
+    "tagline": "Behind every life choice, there is an abandoned timeline."
+  },
+  "nav": {
+    "home": "Home",
+    "simulate": "New Simulation",
+    "history": "History",
+    "lifemap": "Life Map",
+    "settings": "Settings"
+  },
+  "home": {
+    "welcome": "Welcome back",
+    "first_visit": "Looks like it's your first visit. Let me get to know you first.",
+    "start_onboarding": "Let's begin",
+    "start_simulation": "Start a simulation"
+  },
+  "onboarding": {
+    "title": "Before we start, I'd like to know you",
+    "next": "Next",
+    "previous": "Previous",
+    "finish": "Got it"
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "error": "Something went wrong"
+  }
+}
