@@ -5,4 +5,5 @@
 
 pub mod black_swan;
 pub mod drama_level;
+pub mod text_format;
 pub mod tracing_init;

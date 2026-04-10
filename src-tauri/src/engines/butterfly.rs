@@ -20,7 +20,7 @@ use crate::ai::gateway::{
     build_profile_summary, format_user_context, AIGateway, UserContextBlock,
 };
 use crate::engines::perturbation::PerturbationFactors;
-use crate::python::subprocess_bridge::PythonBridge;
+use crate::python::subprocess_bridge::{PythonBridge, PythonWorkerManager};
 use crate::types::emotion::EmotionDimensions;
 use crate::types::error::AppError;
 use crate::types::profile::UserProfile;
@@ -73,6 +73,10 @@ impl Default for ButterflyEngineConfig {
 pub struct SimulationProgress {
     pub current: usize,
     pub total: usize,
+    /// 阶段标识符，前端用于 i18n 映射：
+    /// "preparing" | "running" | "clustering"
+    pub stage: String,
+    /// 兼容字段：便于前端在 i18n 缺失时直接展示
     pub message: String,
 }
 
@@ -90,12 +94,13 @@ const RUN_MAX_RETRIES: usize = 1;
 // 蝴蝶效应引擎
 // ============================================================================
 
-/// 依赖方向：ButterflyEngine 持有 AIGateway + PythonBridge。
-/// PythonBridge 用于 TF-IDF 聚类和现实主义校验。
+/// 依赖方向：ButterflyEngine 持有 AIGateway + PythonWorkerManager。
+/// PythonWorkerManager 按需拉起 PythonBridge，用于 TF-IDF 聚类和现实主义校验。
+/// 通过管理器（而非直接持有 bridge）可在通信失败时显式 invalidate 并重启 worker。
 pub struct ButterflyEngine {
     config: ButterflyEngineConfig,
     ai_gateway: Arc<RwLock<AIGateway>>,
-    python_bridge: Option<Arc<PythonBridge>>,
+    python_worker: Option<Arc<PythonWorkerManager>>,
 }
 
 impl ButterflyEngine {
@@ -103,7 +108,7 @@ impl ButterflyEngine {
         Self {
             config: ButterflyEngineConfig::default(),
             ai_gateway,
-            python_bridge: None,
+            python_worker: None,
         }
     }
 
@@ -112,9 +117,24 @@ impl ButterflyEngine {
         self
     }
 
-    pub fn with_python_bridge(mut self, bridge: Arc<PythonBridge>) -> Self {
-        self.python_bridge = Some(bridge);
+    pub fn with_python_worker(
+        mut self,
+        worker: Arc<PythonWorkerManager>,
+    ) -> Self {
+        self.python_worker = Some(worker);
         self
+    }
+
+    /// 获取 bridge：若已有 manager 则 lazy 拉起；否则返回 None
+    async fn get_bridge(&self) -> Option<Arc<PythonBridge>> {
+        let worker = self.python_worker.as_ref()?;
+        match worker.get_bridge().await {
+            Ok(b) => Some(b),
+            Err(e) => {
+                warn!(error = %e, "Python Worker 不可用");
+                None
+            }
+        }
     }
 
     // ========================================================================
@@ -196,7 +216,7 @@ impl ButterflyEngine {
         info!(run_count = total, "开始批量推演");
 
         // Step 1: 通知前端 — 准备推演
-        emit_progress(app_handle, 0, total, "正在准备推演...");
+        emit_progress(app_handle, 0, total, "preparing", "正在准备推演...");
 
         // Step 2: 生成扰动因子 + Prompt + Temperature
         let runs: Vec<(String, String, f32, PerturbationFactors)> =
@@ -271,6 +291,7 @@ impl ButterflyEngine {
                                         &app_handle,
                                         done,
                                         run_total,
+                                        "running",
                                         &msg,
                                     );
                                 }
@@ -314,7 +335,13 @@ impl ButterflyEngine {
                     if done > prev {
                         let msg =
                             format!("正在推演第 {done}/{run_total} 种可能...");
-                        emit_progress(&app_handle, done, run_total, &msg);
+                        emit_progress(
+                            &app_handle,
+                            done,
+                            run_total,
+                            "running",
+                            &msg,
+                        );
                     }
                 }
                 None
@@ -340,12 +367,18 @@ impl ButterflyEngine {
         }
 
         // Step 4: 通知前端 — 进入聚类阶段
-        emit_progress(app_handle, total, total, "正在归纳时间线...");
+        emit_progress(
+            app_handle,
+            total,
+            total,
+            "clustering",
+            "正在归纳时间线...",
+        );
 
-        // Step 5: 现实主义校验（有 Python Bridge 时才执行）
-        if let Some(ref bridge) = self.python_bridge {
+        // Step 5: 现实主义校验（有 Python Worker 时才执行）
+        if let Some(bridge) = self.get_bridge().await {
             candidates =
-                self.apply_realism_checks(candidates, bridge).await;
+                self.apply_realism_checks(candidates, &bridge).await;
         }
 
         // Step 6: 黑天鹅注入
@@ -354,8 +387,21 @@ impl ButterflyEngine {
         }
 
         // Step 7: TF-IDF 聚类 → 3 条代表性时间线
-        let selected = if let Some(ref bridge) = self.python_bridge {
-            self.cluster_timelines(candidates, bridge).await?
+        let selected = if let Some(bridge) = self.get_bridge().await {
+            match self.cluster_timelines(candidates.clone(), &bridge).await {
+                Ok(v) => v,
+                Err(e) => {
+                    warn!(error = %e, "聚类失败，降级为取前 K 条");
+                    // Worker 可能已经挂了，显式失效让下次调用重启
+                    if let Some(ref worker) = self.python_worker {
+                        worker.invalidate().await;
+                    }
+                    candidates
+                        .into_iter()
+                        .take(self.config.timeline_count)
+                        .collect()
+                }
+            }
         } else {
             candidates
                 .into_iter()
@@ -510,11 +556,13 @@ fn emit_progress(
     app_handle: &tauri::AppHandle,
     current: usize,
     total: usize,
+    stage: &str,
     message: &str,
 ) {
     let payload = SimulationProgress {
         current,
         total,
+        stage: stage.to_string(),
         message: message.to_string(),
     };
     if let Err(e) = app_handle.emit("simulation_progress", &payload) {
@@ -575,7 +623,7 @@ fn build_simulation_prompts(
 
 【输出格式 - 必须严格遵循此 JSON 格式】
 {{
-  "narrative": "推演叙事（300-500字，语言为{language}）",
+  "narrative": "推演叙事（300-500字，语言为{language}）。必须分段排版：按时间或主题分成多个自然段；段与段之间用空行分隔；禁止输出为无换行的一整段长文。",
   "key_events": [
     {{"year": "1年后", "event": "事件描述", "emotion": "positive"}},
     {{"year": "3年后", "event": "事件描述", "emotion": "negative"}},

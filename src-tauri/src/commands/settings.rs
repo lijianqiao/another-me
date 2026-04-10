@@ -1,6 +1,6 @@
 //! 应用设置 + Ollama 检测 + 云端 API Key 管理 命令
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tauri::State;
 use tracing::{debug, info};
 
@@ -57,13 +57,8 @@ pub async fn check_ollama_status(
 #[derive(Debug, Deserialize)]
 pub struct SaveApiKeyInput {
     pub provider: String,
-    pub api_key: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ProviderKeyStatus {
-    pub provider: String,
-    pub has_key: bool,
+    pub api_key: Option<String>,
+    pub base_url: Option<String>,
 }
 
 fn parse_provider(s: &str) -> Result<AIProvider, String> {
@@ -95,8 +90,13 @@ pub async fn save_api_key(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     let conn = state.db.settings.lock().await;
-    credential_store::store_api_key(&conn, &input.provider, &input.api_key)
-        .map_err(|e| e.to_string())
+    credential_store::save_cloud_provider(
+        &conn,
+        &input.provider,
+        input.api_key.as_deref(),
+        input.base_url.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -111,16 +111,9 @@ pub async fn delete_api_key(
 #[tauri::command]
 pub async fn list_api_key_status(
     state: State<'_, AppState>,
-) -> Result<Vec<ProviderKeyStatus>, String> {
+) -> Result<Vec<credential_store::CloudProviderStatus>, String> {
     let conn = state.db.settings.lock().await;
-    let providers = ["openai", "anthropic", "qwen", "deepseek", "gemini"];
-    Ok(providers
-        .iter()
-        .map(|p| ProviderKeyStatus {
-            provider: p.to_string(),
-            has_key: credential_store::has_api_key(&conn, p),
-        })
-        .collect())
+    credential_store::list_cloud_provider_status(&conn).map_err(|e| e.to_string())
 }
 
 #[derive(Debug, Deserialize)]
@@ -145,19 +138,35 @@ pub async fn switch_provider(
         return Ok(());
     }
 
-    let api_key = {
+    let (api_key, base_url) = {
         let conn = state.db.settings.lock().await;
-        credential_store::get_api_key(&conn, &input.provider)
+        let key = credential_store::get_api_key(&conn, &input.provider)
             .map_err(|e| e.to_string())?
-            .ok_or_else(|| format!("未设置 {} API Key", input.provider))?
+            .ok_or_else(|| format!("未设置 {} API Key", input.provider))?;
+        let from_input = input
+            .base_url
+            .as_ref()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
+        let merged = from_input.or_else(|| {
+            credential_store::get_base_url(&conn, &input.provider)
+                .ok()
+                .flatten()
+        });
+        (key, merged)
     };
+
+    if base_url.is_none() {
+        return Err("请先在模型管理页填写该提供商的 API Base URL".into());
+    }
 
     let mut gw = state.ai_gateway.write().await;
     gw.set_provider(provider);
     gw.set_cloud_config(CloudProviderConfig {
         api_key,
         model: input.model.clone(),
-        base_url: input.base_url,
+        base_url,
     });
 
     info!(

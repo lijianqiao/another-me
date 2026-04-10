@@ -52,7 +52,8 @@ pub async fn call_openai_compat(
     temperature: f32,
     provider_label: &str,
 ) -> Result<String, AppError> {
-    let url = format!("{base_url}/chat/completions");
+    let base = base_url.trim().trim_end_matches('/');
+    let url = format!("{base}/chat/completions");
     debug!(model = %model, provider = %provider_label, "调用 OpenAI 兼容 API");
 
     let request = ChatRequest {

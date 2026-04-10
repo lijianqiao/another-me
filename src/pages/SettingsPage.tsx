@@ -12,15 +12,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  checkOllamaStatus,
-  type OllamaStatus,
-  type ProviderKeyStatus,
-  listApiKeyStatus,
-  saveApiKey,
-  deleteApiKey,
-  switchProvider,
-} from "../api/settings";
+import { checkOllamaStatus, type OllamaStatus } from "../api/settings";
 import { useSettingsStore, useUiStore } from "../store";
 
 export default function SettingsPage() {
@@ -31,13 +23,6 @@ export default function SettingsPage() {
 
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null);
   const [checking, setChecking] = useState(false);
-
-  // Sprint 10: Cloud provider states
-  const [keyStatuses, setKeyStatuses] = useState<ProviderKeyStatus[]>([]);
-  const [editingProvider, setEditingProvider] = useState<string | null>(null);
-  const [keyInput, setKeyInput] = useState("");
-  const [cloudModel, setCloudModel] = useState("");
-  const [activeProvider, setActiveProvider] = useState("ollama");
 
   const doCheckOllama = useCallback(async () => {
     setChecking(true);
@@ -52,17 +37,9 @@ export default function SettingsPage() {
     }
   }, [pushToast, t]);
 
-  const loadKeyStatuses = useCallback(async () => {
-    try {
-      const statuses = await listApiKeyStatus();
-      setKeyStatuses(statuses);
-    } catch { /* ignore */ }
-  }, []);
-
   useEffect(() => {
     void doCheckOllama();
-    void loadKeyStatuses();
-  }, [doCheckOllama, loadKeyStatuses]);
+  }, [doCheckOllama]);
 
   const handleLanguageChange = async (lang: string) => {
     await update({ language: lang });
@@ -256,173 +233,6 @@ export default function SettingsPage() {
           </span>
         </label>
       </div>
-
-      {/* Sprint 10: Cloud API 配置 */}
-      <div className="settings-section">
-        <h3 className="settings-section__title">{t("settings.cloud_title")}</h3>
-        <p className="settings-section__desc">{t("settings.cloud_desc")}</p>
-
-        <div className="cloud-providers">
-          {CLOUD_PROVIDERS.map((cp) => {
-            const status = keyStatuses.find((k) => k.provider === cp.id);
-            const hasKey = status?.has_key ?? false;
-            const isEditing = editingProvider === cp.id;
-
-            return (
-              <div key={cp.id} className="cloud-provider-card">
-                <div className="cloud-provider-card__header">
-                  <span className="cloud-provider-card__name">{cp.label}</span>
-                  <span
-                    className={`cloud-provider-card__badge ${
-                      hasKey ? "cloud-provider-card__badge--ok" : ""
-                    }`}
-                  >
-                    {hasKey
-                      ? t("settings.key_configured")
-                      : t("settings.key_not_set")}
-                  </span>
-                </div>
-
-                {isEditing ? (
-                  <div className="cloud-provider-card__form">
-                    <input
-                      type="password"
-                      className="settings-input"
-                      placeholder="API Key"
-                      value={keyInput}
-                      onChange={(e) => setKeyInput(e.target.value)}
-                    />
-                    <div className="cloud-provider-card__actions">
-                      <button
-                        className="btn btn--sm btn--primary"
-                        disabled={!keyInput.trim()}
-                        onClick={async () => {
-                          try {
-                            await saveApiKey(cp.id, keyInput.trim());
-                            pushToast("info", t("settings.key_saved"));
-                            setEditingProvider(null);
-                            setKeyInput("");
-                            void loadKeyStatuses();
-                          } catch (err) {
-                            pushToast("error", String(err));
-                          }
-                        }}
-                      >
-                        {t("common.save")}
-                      </button>
-                      <button
-                        className="btn btn--sm"
-                        onClick={() => {
-                          setEditingProvider(null);
-                          setKeyInput("");
-                        }}
-                      >
-                        {t("common.cancel")}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="cloud-provider-card__actions">
-                    <button
-                      className="btn btn--sm"
-                      onClick={() => {
-                        setEditingProvider(cp.id);
-                        setKeyInput("");
-                      }}
-                    >
-                      {hasKey
-                        ? t("settings.key_update")
-                        : t("settings.key_set")}
-                    </button>
-                    {hasKey && (
-                      <>
-                        <button
-                          className="btn btn--sm btn--danger"
-                          onClick={async () => {
-                            try {
-                              await deleteApiKey(cp.id);
-                              pushToast("info", t("settings.key_deleted"));
-                              void loadKeyStatuses();
-                            } catch (err) {
-                              pushToast("error", String(err));
-                            }
-                          }}
-                        >
-                          {t("models.delete")}
-                        </button>
-                        <button
-                          className="btn btn--sm btn--primary"
-                          onClick={async () => {
-                            const model =
-                              cloudModel.trim() || cp.defaultModel;
-                            try {
-                              await switchProvider({
-                                provider: cp.id,
-                                model,
-                              });
-                              setActiveProvider(cp.id);
-                              pushToast(
-                                "info",
-                                t("settings.provider_switched", {
-                                  provider: cp.label,
-                                }),
-                              );
-                            } catch (err) {
-                              pushToast("error", String(err));
-                            }
-                          }}
-                        >
-                          {activeProvider === cp.id
-                            ? t("models.active")
-                            : t("models.use")}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                <div className="cloud-provider-card__model">
-                  <input
-                    type="text"
-                    className="settings-input settings-input--sm"
-                    placeholder={cp.defaultModel}
-                    value={activeProvider === cp.id ? cloudModel : ""}
-                    onChange={(e) => setCloudModel(e.target.value)}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {activeProvider !== "ollama" && (
-          <button
-            className="btn btn--sm"
-            onClick={async () => {
-              try {
-                await switchProvider({
-                  provider: "ollama",
-                  model: settings.active_model_id,
-                });
-                setActiveProvider("ollama");
-                pushToast("info", t("settings.back_to_ollama"));
-              } catch (err) {
-                pushToast("error", String(err));
-              }
-            }}
-          >
-            {t("settings.back_to_ollama")}
-          </button>
-        )}
-      </div>
     </section>
   );
 }
-
-const CLOUD_PROVIDERS = [
-  { id: "openai", label: "OpenAI", defaultModel: "gpt-4o" },
-  { id: "anthropic", label: "Anthropic", defaultModel: "claude-sonnet-4-20250514" },
-  { id: "qwen", label: "Qwen / DashScope", defaultModel: "qwen-plus" },
-  { id: "deepseek", label: "DeepSeek", defaultModel: "deepseek-chat" },
-  { id: "gemini", label: "Google Gemini", defaultModel: "gemini-2.0-flash" },
-];

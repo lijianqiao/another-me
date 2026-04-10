@@ -35,7 +35,7 @@ export default function ProfileCorrectionDialog({
       setApplied((prev) => new Set(prev).add(c.field));
       pushToast("info", t("feedback.correction_applied"));
     } catch (err) {
-      pushToast("error", String(err));
+      pushToast("error", t("errors.generic", { detail: String(err) }));
     } finally {
       setLoading(false);
     }

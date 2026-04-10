@@ -70,11 +70,16 @@ export default function OnboardingPage() {
       pushToast("success", t("onboarding.finish") + " ✓");
       navigate("/", { replace: true });
     } catch (err) {
-      pushToast("error", (err as Error).message);
+      pushToast(
+        "error",
+        t("errors.generic", { detail: String((err as Error).message) }),
+      );
     } finally {
       setBusy(false);
     }
   };
+
+  const req = t("onboarding.required_mark");
 
   return (
     <section className="onboarding">
@@ -92,53 +97,53 @@ export default function OnboardingPage() {
           <div className="onboarding__step">
             <h2 className="onboarding__title">👋 {t("onboarding.title")}</h2>
             <p className="onboarding__desc">
-              在推演你的未来之前，我需要先了解一下你。<br />
-              这些信息仅保存在本地，不会上传到任何服务器。
+              {t("onboarding.welcome_desc_1")}<br />
+              {t("onboarding.welcome_desc_2")}
             </p>
             <p className="onboarding__desc onboarding__desc--muted">
-              只需要 1 分钟，回答几个简单的问题。
+              {t("onboarding.welcome_note")}
             </p>
           </div>
         )}
 
         {step === 1 && (
           <div className="onboarding__step">
-            <h2 className="onboarding__title">📋 基础信息</h2>
+            <h2 className="onboarding__title">{t("onboarding.section_basic")}</h2>
             <div className="stack">
               <label>
-                职业 *
+                {t("onboarding.field_occupation")}{req}
                 <input
                   value={occupation}
                   onChange={(e) => setOccupation(e.target.value)}
-                  placeholder="例如：程序员、学生、自由职业者"
+                  placeholder={t("onboarding.field_occupation_ph")}
                 />
               </label>
               <label>
-                感情状态 *
+                {t("onboarding.field_relationship")}{req}
                 <input
                   value={relationship}
                   onChange={(e) => setRelationship(e.target.value)}
-                  placeholder="例如：单身、恋爱中、已婚"
+                  placeholder={t("onboarding.field_relationship_ph")}
                 />
               </label>
               <label>
-                经济状况
+                {t("onboarding.field_financial")}
                 <select
                   value={financial}
                   onChange={(e) => setFinancial(e.target.value as FinancialStatus)}
                 >
-                  <option value="broke">月光族</option>
-                  <option value="saving">略有积蓄</option>
-                  <option value="stable">经济独立</option>
-                  <option value="debt">背负贷款</option>
+                  <option value="broke">{t("onboarding.financial_broke")}</option>
+                  <option value="saving">{t("onboarding.financial_saving")}</option>
+                  <option value="stable">{t("onboarding.financial_stable")}</option>
+                  <option value="debt">{t("onboarding.financial_debt")}</option>
                 </select>
               </label>
               <label>
-                所在城市（可选）
+                {t("onboarding.field_location")}
                 <input
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="例如：北京、上海"
+                  placeholder={t("onboarding.field_location_ph")}
                 />
               </label>
             </div>
@@ -147,33 +152,33 @@ export default function OnboardingPage() {
 
         {step === 2 && (
           <div className="onboarding__step">
-            <h2 className="onboarding__title">🎯 日常习惯</h2>
+            <h2 className="onboarding__title">{t("onboarding.section_habits")}</h2>
             <div className="stack">
               <label>
-                日常习惯 *（逗号分隔）
+                {t("onboarding.field_habits")}{req}
                 <input
                   value={habits}
                   onChange={(e) => setHabits(e.target.value)}
-                  placeholder="例如：打游戏、健身、刷短视频、读书"
+                  placeholder={t("onboarding.field_habits_ph")}
                 />
               </label>
               <label>
-                社交倾向
+                {t("onboarding.field_social")}
                 <select
                   value={social}
                   onChange={(e) => setSocial(e.target.value as SocialTendency)}
                 >
-                  <option value="introvert">内向 / 独处充电</option>
-                  <option value="neutral">中间 / 看心情</option>
-                  <option value="extrovert">外向 / 人群充电</option>
+                  <option value="introvert">{t("onboarding.social_introvert")}</option>
+                  <option value="neutral">{t("onboarding.social_neutral")}</option>
+                  <option value="extrovert">{t("onboarding.social_extrovert")}</option>
                 </select>
               </label>
               <label>
-                健康状况（可选）
+                {t("onboarding.field_health")}
                 <input
                   value={healthStatus}
                   onChange={(e) => setHealthStatus(e.target.value)}
-                  placeholder="例如：健康、亚健康、慢性病"
+                  placeholder={t("onboarding.field_health_ph")}
                 />
               </label>
             </div>
@@ -182,30 +187,30 @@ export default function OnboardingPage() {
 
         {step === 3 && (
           <div className="onboarding__step">
-            <h2 className="onboarding__title">💡 性格画像</h2>
+            <h2 className="onboarding__title">{t("onboarding.section_personality")}</h2>
             <div className="stack">
               <label>
-                性格标签 *（逗号分隔）
+                {t("onboarding.field_tags")}{req}
                 <input
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  placeholder="例如：拖延症、完美主义、行动派"
+                  placeholder={t("onboarding.field_tags_ph")}
                 />
               </label>
               <label>
-                核心恐惧（可选，逗号分隔）
+                {t("onboarding.field_fears")}
                 <input
                   value={coreFears}
                   onChange={(e) => setCoreFears(e.target.value)}
-                  placeholder="例如：失败、孤独、贫穷"
+                  placeholder={t("onboarding.field_fears_ph")}
                 />
               </label>
               <label>
-                梦想目标（可选，逗号分隔）
+                {t("onboarding.field_dreams")}
                 <input
                   value={dreams}
                   onChange={(e) => setDreams(e.target.value)}
-                  placeholder="例如：财务自由、环游世界"
+                  placeholder={t("onboarding.field_dreams_ph")}
                 />
               </label>
             </div>

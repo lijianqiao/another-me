@@ -24,9 +24,10 @@ export async function checkOllamaStatus(): Promise<OllamaStatus> {
 
 // Sprint 10: Cloud API Key Management
 
-export interface ProviderKeyStatus {
+export interface CloudProviderStatus {
   provider: string;
   has_key: boolean;
+  base_url: string | null;
 }
 
 export interface SwitchProviderInput {
@@ -35,21 +36,24 @@ export interface SwitchProviderInput {
   base_url?: string;
 }
 
-export async function saveApiKey(
-  provider: string,
-  apiKey: string,
+export interface SaveCloudProviderInput {
+  provider: string;
+  api_key?: string;
+  base_url?: string;
+}
+
+export async function saveCloudProvider(
+  input: SaveCloudProviderInput,
 ): Promise<void> {
-  return invokeCommand("save_api_key", {
-    input: { provider, api_key: apiKey },
-  });
+  return invokeCommand("save_api_key", { input });
 }
 
 export async function deleteApiKey(provider: string): Promise<void> {
   return invokeCommand("delete_api_key", { provider });
 }
 
-export async function listApiKeyStatus(): Promise<ProviderKeyStatus[]> {
-  return invokeCommand<ProviderKeyStatus[]>("list_api_key_status");
+export async function listApiKeyStatus(): Promise<CloudProviderStatus[]> {
+  return invokeCommand<CloudProviderStatus[]>("list_api_key_status");
 }
 
 export async function switchProvider(

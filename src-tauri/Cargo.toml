@@ -55,6 +55,9 @@ uuid = { version = "1", features = ["v4", "serde"] }
 aes-gcm = "0.10"
 base64 = "0.22"
 
+# Open folder / reveal in explorer
+open = "5"
+
 [features]
 # this feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]

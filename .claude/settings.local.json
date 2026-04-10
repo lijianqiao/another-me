@@ -3,7 +3,8 @@
     "allow": [
       "Bash(pnpm install:*)",
       "Bash(cargo check:*)",
-      "Bash(pnpm exec:*)"
+      "Bash(pnpm exec:*)",
+      "mcp__plugin_context-mode_context-mode__ctx_execute"
     ]
   }
 }

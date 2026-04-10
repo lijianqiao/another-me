@@ -31,6 +31,7 @@ impl Databases {
         let profiles = open_and_migrate(&db_dir.join("profiles.db"), PROFILES_SCHEMA)?;
         let decisions = open_and_migrate(&db_dir.join("decisions.db"), DECISIONS_SCHEMA)?;
         let settings = open_and_migrate(&db_dir.join("settings.db"), SETTINGS_SCHEMA)?;
+        migrate_settings_api_keys(&settings)?;
 
         // 首次启动写入默认设置
         seed_default_settings(&settings)?;
@@ -59,8 +60,23 @@ fn open_and_migrate(path: &std::path::Path, schema: &str) -> AppResult<Connectio
          PRAGMA journal_mode = WAL;
          PRAGMA synchronous = NORMAL;",
     )?;
-    conn.execute_batch(schema)?;
+    // 将 schema DDL 包裹在事务中，避免半建表状态
+    conn.execute_batch(&format!("BEGIN IMMEDIATE;\n{schema}\nCOMMIT;"))?;
     Ok(conn)
+}
+
+/// 为 api_keys 增加 base_url 列（旧库升级）
+fn migrate_settings_api_keys(conn: &Connection) -> AppResult<()> {
+    let mut stmt = conn.prepare("PRAGMA table_info(api_keys)")?;
+    let cols: Vec<String> = stmt
+        .query_map([], |row| row.get::<_, String>(1))?
+        .filter_map(|r| r.ok())
+        .collect();
+    if !cols.iter().any(|c| c == "base_url") {
+        conn.execute("ALTER TABLE api_keys ADD COLUMN base_url TEXT", [])?;
+        info!("已迁移 api_keys.base_url 列");
+    }
+    Ok(())
 }
 
 fn seed_default_settings(conn: &Connection) -> AppResult<()> {
@@ -229,7 +245,11 @@ CREATE INDEX IF NOT EXISTS idx_decisions_profile ON decisions(profile_id);
 CREATE INDEX IF NOT EXISTS idx_decisions_created ON decisions(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_timelines_decision ON timelines(decision_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_decision ON user_feedback(decision_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_processed ON user_feedback(processed) WHERE processed = 0;
+CREATE INDEX IF NOT EXISTS idx_causal_links_decision ON causal_chain_links(decision_id);
+CREATE INDEX IF NOT EXISTS idx_causal_links_prev ON causal_chain_links(previous_decision_id);
 CREATE INDEX IF NOT EXISTS idx_lifemap_profile ON life_map_nodes(profile_id);
+CREATE INDEX IF NOT EXISTS idx_lifemap_date ON life_map_nodes(node_date);
 "#;
 
 const SETTINGS_SCHEMA: &str = r#"
@@ -242,6 +262,7 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE TABLE IF NOT EXISTS api_keys (
     provider        TEXT PRIMARY KEY,
     encrypted_key   TEXT NOT NULL,
+    base_url        TEXT,
     created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 "#;

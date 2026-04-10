@@ -5,13 +5,14 @@
 import { useTranslation } from "react-i18next";
 
 import type { Timeline, TimelineType } from "../../types";
+import { splitNarrativeParagraphs } from "../../utils/narrativeFormat";
 
 interface Props {
   timeline: Timeline;
   index: number;
 }
 
-const EMOTION_LABELS: Record<string, string> = {
+const EMOTION_ICONS: Record<string, string> = {
   positive: "🟢",
   neutral: "🔵",
   negative: "🔴",
@@ -28,6 +29,7 @@ export default function TimelineCard({ timeline, index }: Props) {
   const { narrative, key_events, emotion, black_swan_event, timeline_type } =
     timeline;
   const typeInfo = TYPE_CONFIG[timeline_type] ?? TYPE_CONFIG.reality;
+  const paragraphs = splitNarrativeParagraphs(narrative);
 
   return (
     <div className="timeline-card">
@@ -45,17 +47,23 @@ export default function TimelineCard({ timeline, index }: Props) {
         )}
       </div>
 
-      <p className="timeline-card__narrative">{narrative}</p>
+      <div className="timeline-card__narrative">
+        {paragraphs.map((p, i) => (
+          <p key={i} className="timeline-card__narrative-p">
+            {p}
+          </p>
+        ))}
+      </div>
 
       {key_events.length > 0 && (
         <div className="timeline-card__events">
-          <h4 className="timeline-card__events-title">关键事件</h4>
+          <h4 className="timeline-card__events-title">{t("results.key_events")}</h4>
           <ul className="timeline-card__events-list">
             {key_events.map((evt, i) => (
               <li key={i} className="timeline-card__event">
                 <span className="timeline-card__event-year">{evt.year}</span>
                 <span className="timeline-card__event-icon">
-                  {EMOTION_LABELS[evt.emotion] ?? "⚪"}
+                  {EMOTION_ICONS[evt.emotion] ?? "⚪"}
                 </span>
                 <span className="timeline-card__event-text">{evt.event}</span>
               </li>
@@ -65,19 +73,42 @@ export default function TimelineCard({ timeline, index }: Props) {
       )}
 
       <div className="timeline-card__emotions">
-        <h4 className="timeline-card__events-title">情绪维度</h4>
+        <h4 className="timeline-card__events-title">{t("results.emotion_section")}</h4>
         <div className="emotion-bars">
-          <EmotionBar label="活力" value={emotion.energy} color="#10b981" />
-          <EmotionBar label="满足" value={emotion.satisfaction} color="#3b82f6" />
-          <EmotionBar label="遗憾" value={emotion.regret} color="#f59e0b" inverted />
-          <EmotionBar label="希望" value={emotion.hope} color="#8b5cf6" />
-          <EmotionBar label="孤独" value={emotion.loneliness} color="#ef4444" inverted />
+          <EmotionBar
+            label={t("results.emotion_energy")}
+            value={emotion.energy}
+            color="#10b981"
+          />
+          <EmotionBar
+            label={t("results.emotion_satisfaction_dim")}
+            value={emotion.satisfaction}
+            color="#3b82f6"
+          />
+          <EmotionBar
+            label={t("results.emotion_regret")}
+            value={emotion.regret}
+            color="#f59e0b"
+            inverted
+          />
+          <EmotionBar
+            label={t("results.emotion_hope")}
+            value={emotion.hope}
+            color="#8b5cf6"
+          />
+          <EmotionBar
+            label={t("results.emotion_loneliness")}
+            value={emotion.loneliness}
+            color="#ef4444"
+            inverted
+          />
         </div>
       </div>
 
       {black_swan_event && (
         <div className="timeline-card__swan">
-          <strong>🦢 黑天鹅事件：</strong>{black_swan_event}
+          <strong>{t("results.black_swan_event_prefix")}</strong>
+          {black_swan_event}
         </div>
       )}
     </div>

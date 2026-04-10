@@ -37,11 +37,13 @@ pub async fn call_anthropic(
     client: &Client,
     api_key: &str,
     model: &str,
+    base_url: &str,
     system_prompt: &str,
     user_prompt: &str,
     temperature: f32,
 ) -> Result<String, AppError> {
-    let url = "https://api.anthropic.com/v1/messages";
+    let base = base_url.trim().trim_end_matches('/');
+    let url = format!("{}/v1/messages", base);
     debug!(model = %model, "调用 Anthropic API");
 
     let request = MessagesRequest {

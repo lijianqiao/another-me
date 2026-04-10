@@ -7,11 +7,17 @@ import { create } from "zustand";
 
 export type ToastKind = "info" | "success" | "warning" | "error";
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface Toast {
   id: number;
   kind: ToastKind;
   message: string;
   createdAt: number;
+  action?: ToastAction;
 }
 
 interface UiState {
@@ -19,7 +25,11 @@ interface UiState {
   toasts: Toast[];
 
   toggleSidebar: () => void;
-  pushToast: (kind: ToastKind, message: string) => void;
+  pushToast: (
+    kind: ToastKind,
+    message: string,
+    action?: ToastAction,
+  ) => void;
   dismissToast: (id: number) => void;
 }
 
@@ -32,11 +42,17 @@ export const useUiStore = create<UiState>((set) => ({
   toggleSidebar: () =>
     set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 
-  pushToast: (kind, message) =>
+  pushToast: (kind, message, action) =>
     set((s) => ({
       toasts: [
         ...s.toasts,
-        { id: ++toastSeq, kind, message, createdAt: Date.now() },
+        {
+          id: ++toastSeq,
+          kind,
+          message,
+          createdAt: Date.now(),
+          action,
+        },
       ],
     })),
 

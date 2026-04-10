@@ -145,6 +145,7 @@ pub fn run() {
             commands::settings::delete_api_key,
             commands::settings::list_api_key_status,
             commands::settings::switch_provider,
+            commands::system::open_path_in_explorer,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

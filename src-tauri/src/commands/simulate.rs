@@ -107,19 +107,11 @@ pub async fn simulate_decision(
         black_swan_probability: 0.03,
     };
 
-    let mut engine = ButterflyEngine::new(state.ai_gateway.clone())
-        .with_config(engine_config);
-
-    // 尝试获取 Python Worker Bridge 用于聚类 + 现实主义校验
-    match state.python_worker.get_bridge().await {
-        Ok(bridge) => {
-            engine = engine.with_python_bridge(bridge);
-            info!("Python Worker 已连接，启用聚类和现实主义校验");
-        }
-        Err(e) => {
-            warn!(error = %e, "Python Worker 不可用，跳过聚类（直接取前 3 条）");
-        }
-    }
+    // 直接交出 PythonWorkerManager；由引擎在需要时 lazy 拉起 bridge，
+    // 并在通信失败时主动 invalidate 触发下一次调用重启 worker。
+    let engine = ButterflyEngine::new(state.ai_gateway.clone())
+        .with_config(engine_config)
+        .with_python_worker(state.python_worker.clone());
 
     // 5. 执行批量推演（5 次并发 → 聚类 → 3 条候选）
     let t_llm_start = Instant::now();
@@ -343,7 +335,9 @@ fn candidate_to_timeline(
         id: Uuid::new_v4().to_string(),
         decision_id: decision_id.to_string(),
         timeline_type,
-        narrative: candidate.narrative.clone(),
+        narrative: crate::utils::text_format::ensure_narrative_breaks(
+            &candidate.narrative,
+        ),
         emotion: candidate.emotion_dimensions.clone(),
         realism_score: 0.5,
         key_events: candidate.key_events.clone(),

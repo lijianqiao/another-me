@@ -92,6 +92,18 @@ pub struct AIGateway {
     config: AIGatewayConfig,
 }
 
+fn require_cloud_base(c: &CloudProviderConfig) -> Result<&str, AppError> {
+    c.base_url
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| {
+            AppError::AiGateway(
+                "未配置 API Base URL，请在模型管理页填写".into(),
+            )
+        })
+}
+
 impl AIGateway {
     pub fn new(config: AIGatewayConfig) -> Self {
         let client = Client::builder()
@@ -124,11 +136,12 @@ impl AIGateway {
             }
             AIProvider::OpenAI => {
                 let c = self.cloud_cfg()?;
+                let base = require_cloud_base(c)?;
                 openai::call_openai(
                     &self.client,
                     &c.api_key,
                     &c.model,
-                    c.base_url.as_deref(),
+                    base,
                     system_prompt,
                     user_prompt,
                     temperature,
@@ -137,10 +150,12 @@ impl AIGateway {
             }
             AIProvider::Anthropic => {
                 let c = self.cloud_cfg()?;
+                let base = require_cloud_base(c)?;
                 anthropic::call_anthropic(
                     &self.client,
                     &c.api_key,
                     &c.model,
+                    base,
                     system_prompt,
                     user_prompt,
                     temperature,
@@ -149,8 +164,7 @@ impl AIGateway {
             }
             AIProvider::Qwen => {
                 let c = self.cloud_cfg()?;
-                let base = c.base_url.as_deref()
-                    .unwrap_or("https://dashscope.aliyuncs.com/compatible-mode/v1");
+                let base = require_cloud_base(c)?;
                 openai_compat::call_openai_compat(
                     &self.client,
                     &c.api_key,
@@ -165,8 +179,7 @@ impl AIGateway {
             }
             AIProvider::DeepSeek => {
                 let c = self.cloud_cfg()?;
-                let base = c.base_url.as_deref()
-                    .unwrap_or("https://api.deepseek.com/v1");
+                let base = require_cloud_base(c)?;
                 openai_compat::call_openai_compat(
                     &self.client,
                     &c.api_key,
@@ -181,10 +194,12 @@ impl AIGateway {
             }
             AIProvider::Gemini => {
                 let c = self.cloud_cfg()?;
+                let base = require_cloud_base(c)?;
                 gemini::call_gemini(
                     &self.client,
                     &c.api_key,
                     &c.model,
+                    base,
                     system_prompt,
                     user_prompt,
                     temperature,

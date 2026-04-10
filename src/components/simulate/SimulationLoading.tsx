@@ -8,19 +8,21 @@ import { useTranslation } from "react-i18next";
 interface ProgressPayload {
   current: number;
   total: number;
+  stage?: string;
   message: string;
 }
 
-const FALLBACK_TIPS = [
-  "正在构建你的平行时空...",
-  "推演引擎正在工作中...",
-  "正在计算蝴蝶效应...",
-  "每个选择都通向不同的未来...",
-];
+const KNOWN_STAGES = new Set(["preparing", "running", "clustering"]);
 
 export default function SimulationLoading() {
   const { t } = useTranslation();
   const [progress, setProgress] = useState<ProgressPayload | null>(null);
+  const fallbackTips = [
+    t("simulate.loading_fallback_1"),
+    t("simulate.loading_fallback_2"),
+    t("simulate.loading_fallback_3"),
+    t("simulate.loading_fallback_4"),
+  ];
 
   useEffect(() => {
     let unlisten: (() => void) | null = null;
@@ -45,9 +47,17 @@ export default function SimulationLoading() {
     };
   }, []);
 
-  const message =
-    progress?.message ||
-    FALLBACK_TIPS[Math.floor(Math.random() * FALLBACK_TIPS.length)];
+  let message: string;
+  if (progress?.stage && KNOWN_STAGES.has(progress.stage)) {
+    message = t(`simulate.stage_${progress.stage}`, {
+      current: progress.current,
+      total: progress.total,
+    });
+  } else if (progress?.message) {
+    message = progress.message;
+  } else {
+    message = fallbackTips[Math.floor(Math.random() * fallbackTips.length)];
+  }
 
   const pct =
     progress && progress.total > 0

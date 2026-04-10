@@ -6,26 +6,42 @@
 //! Sprint 2：使用本地 Python 运行。
 //! Sprint 4：支持 Sidecar 模式（PyInstaller 打包的可执行文件）。
 //! 优先级：Sidecar > 本地 Python。
+//!
+//! 并发安全性：stdin 和 stdout 由单个 `Mutex<BridgeIo>` 守护，
+//! 保证任意 call() 的 "写请求 -> 读响应" 是原子操作，
+//! 不会被其它并发调用穿插导致应答错配。
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
-use tokio::process::{Child, Command};
+use std::process::Stdio;
+
+use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
+use tokio::time::timeout;
 use tracing::{debug, error, info, warn};
 
 use crate::python::protocol::{WorkerRequest, WorkerResponse};
 use crate::types::error::AppError;
 
-type ChildStdin = BufWriter<tokio::process::ChildStdin>;
-type ChildStdout = BufReader<tokio::process::ChildStdout>;
+/// 单次 call() 的总超时（写 + 读）
+const CALL_TIMEOUT: Duration = Duration::from_secs(120);
+/// 等待 worker ready 信号的总超时
+const READY_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// 持有 stdin/stdout 的原子 IO 对。
+/// 通过单一 Mutex 保护，确保 write-then-read 不会被并发穿插。
+struct BridgeIo {
+    stdin: BufWriter<ChildStdin>,
+    stdout: BufReader<ChildStdout>,
+}
 
 /// Python Worker 桥接
 pub struct PythonBridge {
     _child: Child,
-    stdin: Arc<Mutex<ChildStdin>>,
-    stdout: Arc<Mutex<ChildStdout>>,
+    io: Mutex<BridgeIo>,
 }
 
 impl PythonBridge {
@@ -39,9 +55,9 @@ impl PythonBridge {
         let mut child = if let Some(sidecar) = sidecar_path {
             info!(path = %sidecar.display(), "使用 Sidecar 模式启动 Python Worker");
             Command::new(&sidecar)
-                .stdin(std::process::Stdio::piped())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::null())
                 .kill_on_drop(true)
                 .spawn()
                 .map_err(|e| {
@@ -60,11 +76,13 @@ impl PythonBridge {
 
             info!(path = %main_py.display(), "使用 Python 解释器启动 Worker");
             Command::new("python")
+                .arg("-u")
                 .arg(&main_py)
                 .current_dir(python_dir)
-                .stdin(std::process::Stdio::piped())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::null())
+                .env("PYTHONUNBUFFERED", "1")
                 .kill_on_drop(true)
                 .spawn()
                 .map_err(|e| {
@@ -83,44 +101,22 @@ impl PythonBridge {
             .take()
             .ok_or_else(|| AppError::PythonBridge("获取 stdout 失败".into()))?;
 
-        let bridge = Self {
-            _child: child,
-            stdin: Arc::new(Mutex::new(BufWriter::new(stdin))),
-            stdout: Arc::new(Mutex::new(BufReader::new(stdout))),
+        let mut io = BridgeIo {
+            stdin: BufWriter::new(stdin),
+            stdout: BufReader::new(stdout),
         };
 
         // 等待 Worker 的 `ready` 信号
-        bridge.wait_ready().await?;
+        wait_ready(&mut io).await?;
 
         info!("Python Worker 已就绪");
-        Ok(bridge)
+        Ok(Self {
+            _child: child,
+            io: Mutex::new(io),
+        })
     }
 
-    /// 等待 Worker 启动完成（读取 `{"ready": true}` 信号）
-    async fn wait_ready(&self) -> Result<(), AppError> {
-        let mut stdout = self.stdout.lock().await;
-        let mut line = String::new();
-        stdout.read_line(&mut line).await.map_err(|e| {
-            AppError::PythonBridge(format!("读取 ready 信号失败: {e}"))
-        })?;
-
-        let resp: WorkerResponse =
-            serde_json::from_str(line.trim()).map_err(|e| {
-                AppError::PythonBridge(format!(
-                    "解析 ready 信号失败: {e}, 原文: {line}"
-                ))
-            })?;
-
-        if resp.ready != Some(true) {
-            return Err(AppError::PythonBridge(format!(
-                "Worker 未发出 ready 信号: {line}"
-            )));
-        }
-
-        Ok(())
-    }
-
-    /// 发送请求并等待响应
+    /// 发送请求并等待响应（写 + 读 原子执行，带总超时）
     pub async fn call(
         &self,
         command: &str,
@@ -137,29 +133,38 @@ impl PythonBridge {
 
         debug!(cmd = command, "发送请求到 Python Worker");
 
-        // 写入请求
-        {
-            let mut stdin = self.stdin.lock().await;
-            stdin
+        // 整个 round-trip 持有同一把锁 — 防止并发调用穿插
+        let mut io = self.io.lock().await;
+
+        let response_line = timeout(CALL_TIMEOUT, async {
+            io.stdin
                 .write_all(format!("{request_json}\n").as_bytes())
                 .await
                 .map_err(|e| {
                     AppError::PythonBridge(format!("写入 stdin 失败: {e}"))
                 })?;
-            stdin.flush().await.map_err(|e| {
+            io.stdin.flush().await.map_err(|e| {
                 AppError::PythonBridge(format!("flush stdin 失败: {e}"))
             })?;
-        }
 
-        // 读取响应
-        let response_line = {
-            let mut stdout = self.stdout.lock().await;
             let mut line = String::new();
-            stdout.read_line(&mut line).await.map_err(|e| {
+            let n = io.stdout.read_line(&mut line).await.map_err(|e| {
                 AppError::PythonBridge(format!("读取 stdout 失败: {e}"))
             })?;
-            line
-        };
+            if n == 0 {
+                return Err(AppError::PythonBridge(
+                    "Python Worker stdout 已关闭，进程可能已退出".into(),
+                ));
+            }
+            Ok::<_, AppError>(line)
+        })
+        .await
+        .map_err(|_| {
+            AppError::PythonBridge(format!(
+                "Python Worker 调用超时（{}s）: {command}",
+                CALL_TIMEOUT.as_secs()
+            ))
+        })??;
 
         let resp: WorkerResponse =
             serde_json::from_str(response_line.trim()).map_err(|e| {
@@ -221,10 +226,61 @@ impl PythonBridge {
     }
 }
 
-/// Python Worker 生命周期管理器（lazy start + 自动重启）
+/// 等待 Worker 启动完成（读取 `{"ready": true}` 信号）
+async fn wait_ready(io: &mut BridgeIo) -> Result<(), AppError> {
+    timeout(READY_TIMEOUT, async {
+        loop {
+            let mut line = String::new();
+            let n = io.stdout.read_line(&mut line).await.map_err(|e| {
+                AppError::PythonBridge(format!("读取 ready 信号失败: {e}"))
+            })?;
+            if n == 0 {
+                return Err(AppError::PythonBridge(
+                    "Python Worker stdout 已关闭，进程可能启动失败".into(),
+                ));
+            }
+
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            match serde_json::from_str::<WorkerResponse>(trimmed) {
+                Ok(r) => {
+                    if r.ready == Some(true) {
+                        return Ok(());
+                    }
+                    warn!(?r, "跳过非 ready JSON 行");
+                }
+                Err(e) => {
+                    warn!(
+                        error = %e,
+                        line = %trimmed.chars().take(120).collect::<String>(),
+                        "解析 ready 行失败，跳过"
+                    );
+                }
+            }
+        }
+    })
+    .await
+    .map_err(|_| {
+        AppError::PythonBridge(format!(
+            "等待 Python Worker ready 信号超时（{}s）",
+            READY_TIMEOUT.as_secs()
+        ))
+    })?
+}
+
+/// Python Worker 生命周期管理器（lazy start + 手动失效 + 自动重启）
+///
+/// 使用方式：
+/// 1. `get_bridge()` 惰性拉起进程，之后复用同一个 Arc
+/// 2. 调用方检测到 bridge 错误时，显式调用 `invalidate()` 丢弃当前 bridge
+/// 3. 下一次 `get_bridge()` 会重新 spawn
 pub struct PythonWorkerManager {
     python_dir: PathBuf,
     bridge: Arc<tokio::sync::RwLock<Option<Arc<PythonBridge>>>>,
+    spawn_lock: Mutex<()>,
 }
 
 impl PythonWorkerManager {
@@ -232,6 +288,7 @@ impl PythonWorkerManager {
         Self {
             python_dir,
             bridge: Arc::new(tokio::sync::RwLock::new(None)),
+            spawn_lock: Mutex::new(()),
         }
     }
 
@@ -245,15 +302,35 @@ impl PythonWorkerManager {
             }
         }
 
-        // 慢路径：需要启动
-        let mut guard = self.bridge.write().await;
-        if guard.is_none() {
-            info!("首次启动 Python Worker...");
-            let bridge =
-                PythonBridge::spawn(&self.python_dir).await?;
-            *guard = Some(Arc::new(bridge));
+        // 慢路径：spawn_lock 保证同一时刻只有一个任务在 spawn
+        let _spawn_guard = self.spawn_lock.lock().await;
+
+        // 二次检查（可能已被其它任务 spawn 完成）
+        {
+            let guard = self.bridge.read().await;
+            if let Some(ref bridge) = *guard {
+                return Ok(Arc::clone(bridge));
+            }
         }
 
-        Ok(Arc::clone(guard.as_ref().unwrap()))
+        info!("首次（或重启）启动 Python Worker...");
+        let bridge = PythonBridge::spawn(&self.python_dir).await?;
+        let arc = Arc::new(bridge);
+
+        {
+            let mut guard = self.bridge.write().await;
+            *guard = Some(Arc::clone(&arc));
+        }
+
+        Ok(arc)
+    }
+
+    /// 丢弃当前 bridge，下次 get_bridge() 会重新 spawn
+    pub async fn invalidate(&self) {
+        let mut guard = self.bridge.write().await;
+        if guard.is_some() {
+            warn!("失效当前 Python Worker，下次调用将重启");
+        }
+        *guard = None;
     }
 }

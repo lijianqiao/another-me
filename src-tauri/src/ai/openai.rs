@@ -46,15 +46,13 @@ pub async fn call_openai(
     client: &Client,
     api_key: &str,
     model: &str,
-    base_url: Option<&str>,
+    base_url: &str,
     system_prompt: &str,
     user_prompt: &str,
     temperature: f32,
 ) -> Result<String, AppError> {
-    let url = format!(
-        "{}/v1/chat/completions",
-        base_url.unwrap_or("https://api.openai.com")
-    );
+    let base = base_url.trim().trim_end_matches('/');
+    let url = format!("{}/v1/chat/completions", base);
     debug!(model = %model, "调用 OpenAI API");
 
     let request = ChatRequest {

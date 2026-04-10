@@ -18,7 +18,10 @@ import DecisionTree from "../components/results/DecisionTree";
 import LifeChart from "../components/results/LifeChart";
 import { getAnchorTimeline, setAnchorTimeline, clearAnchor } from "../api/history";
 import type { ProfileCorrectionSuggestion } from "../api/feedback";
+import { downloadDir } from "@tauri-apps/api/path";
+
 import { exportDecisionJson } from "../api/export";
+import { openPathInExplorer } from "../api/system";
 import { downloadAsFile, exportElementAsPng } from "../utils/export";
 import { useSimulationStore, useUiStore } from "../store";
 
@@ -136,8 +139,19 @@ export default function ResultsPage() {
                     try {
                       const json = await exportDecisionJson(decision_id);
                       downloadAsFile(json, `another-me-${decision_id.slice(0, 8)}.json`);
-                      pushToast("info", t("results.export_done"));
-                    } catch (err) { pushToast("error", String(err)); }
+                      const dir = await downloadDir();
+                      pushToast("info", t("results.export_done_downloads"), {
+                        label: t("results.open_downloads_folder"),
+                        onClick: () => {
+                          void openPathInExplorer(dir);
+                        },
+                      });
+                    } catch (err) {
+                      pushToast(
+                        "error",
+                        t("errors.generic", { detail: String(err) }),
+                      );
+                    }
                   }}
                 >
                   JSON
@@ -147,9 +161,23 @@ export default function ResultsPage() {
                     onClick={async () => {
                       setShowExportMenu(false);
                       try {
-                        await exportElementAsPng(".decision-tree", `decision-tree-${decision_id.slice(0, 8)}.png`);
-                        pushToast("info", t("results.export_done"));
-                      } catch (err) { pushToast("error", String(err)); }
+                        await exportElementAsPng(
+                          ".results-export-snapshot .decision-tree",
+                          `decision-tree-${decision_id.slice(0, 8)}.png`,
+                        );
+                        const dir = await downloadDir();
+                        pushToast("info", t("results.export_done_downloads"), {
+                          label: t("results.open_downloads_folder"),
+                          onClick: () => {
+                            void openPathInExplorer(dir);
+                          },
+                        });
+                      } catch (err) {
+                        pushToast(
+                          "error",
+                          t("errors.generic", { detail: String(err) }),
+                        );
+                      }
                     }}
                   >
                     PNG
@@ -219,6 +247,12 @@ export default function ResultsPage() {
 
       {activeTab === "tree" && hasTree && (
         <DecisionTree tree={decision_tree!} />
+      )}
+
+      {hasTree && (
+        <div className="results-export-snapshot" aria-hidden>
+          <DecisionTree tree={decision_tree!} />
+        </div>
       )}
 
       {activeTab === "chart" && hasChart && (

@@ -51,7 +51,7 @@ export default function FeedbackButtons({
       setSubmitted(true);
       pushToast("info", t("feedback.thanks_accurate"));
     } catch (err) {
-      pushToast("error", String(err));
+      pushToast("error", t("errors.generic", { detail: String(err) }));
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export default function FeedbackButtons({
         onCorrections(result.feedback_id, result.corrections);
       }
     } catch (err) {
-      pushToast("error", String(err));
+      pushToast("error", t("errors.generic", { detail: String(err) }));
     } finally {
       setLoading(false);
     }

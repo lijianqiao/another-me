@@ -21,7 +21,21 @@ export default function Toaster() {
     <div className="toaster">
       {toasts.map((t) => (
         <div key={t.id} className={`toast toast--${t.kind}`}>
-          <span>{t.message}</span>
+          <span className="toast__body">
+            {t.message}
+            {t.action && (
+              <button
+                type="button"
+                className="toast__action"
+                onClick={() => {
+                  t.action?.onClick();
+                  dismiss(t.id);
+                }}
+              >
+                {t.action.label}
+              </button>
+            )}
+          </span>
           <button className="toast__close" onClick={() => dismiss(t.id)}>
             ×
           </button>
