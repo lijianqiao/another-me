@@ -20,13 +20,23 @@
     "title": "Before we start, I'd like to know you",
     "next": "Next",
     "previous": "Previous",
-    "finish": "Got it"
+    "finish": "Got it",
+    "step_welcome": "Welcome",
+    "step_basic": "Basics",
+    "step_habits": "Habits",
+    "step_personality": "Personality"
   },
   "simulate": {
     "title": "New Simulation",
     "subtitle": "Enter a life decision you're struggling with, and let the engine show you possible futures.",
+    "decision_label": "What decision are you struggling with?",
     "decision_placeholder": "e.g., Should I quit my job to start a business?",
-    "context_placeholder": "Any extra context?",
+    "context_label": "Extra context (optional)",
+    "context_placeholder": "Any extra background? e.g., 3 years experience, $30k savings",
+    "horizon_label": "Time horizon",
+    "year": "yr",
+    "black_swan": "Enable black swan factor",
+    "black_swan_hint": "Low-probability extreme events may be injected",
     "start": "Start Simulation",
     "loading_tip": "Simulation engine is working...",
     "loading_hint": "Typically takes 30-120 seconds"
@@ -34,15 +44,53 @@
   "results": {
     "title": "Simulation Results",
     "again": "Try Again",
+    "no_result": "No simulation results.",
+    "go_simulate": "Start Simulation",
     "timeline": "Timeline",
     "key_events": "Key Events",
     "emotions": "Emotions",
     "dark_warning": "This simulation contains heavy content. It's just one of many possibilities.",
-    "recovery_tip": "Multiple emotion dimensions are low. Remember, real life always has turning points."
+    "recovery_tip": "Multiple emotion dimensions are low. Remember, real life always has turning points. AI simulation is just a reference. Talk to a friend if you feel uneasy.",
+    "dark_dialog_title": "Content Warning",
+    "dark_dialog_message": "This simulation contains heavy content (e.g., serious illness, bankruptcy). It's just one AI-generated possibility, not your actual future. Continue viewing?",
+    "dark_dialog_confirm": "I understand, continue",
+    "dark_dialog_cancel": "Go back"
   },
   "letter": {
     "title": "Letter from Future",
     "shine_title": "Bright spots right now"
+  },
+  "settings": {
+    "ollama_title": "Inference Engine (Ollama)",
+    "ollama_status": "Connection",
+    "ollama_running": "Connected",
+    "ollama_offline": "Not detected",
+    "ollama_refresh": "Refresh",
+    "ollama_check_fail": "Ollama check failed",
+    "target_model": "Target model",
+    "model_ready": "Ready",
+    "model_missing": "Not downloaded",
+    "available_models": "Installed models",
+    "model_pull_hint": "Run ollama pull {{model}} to download the target model",
+    "ollama_install_hint": "Ollama not detected. Visit ollama.com to install, then refresh this page.",
+    "language": "Language",
+    "model_id": "Model ID",
+    "drama_level": "Default drama level",
+    "drama_1": "Ordinary life",
+    "drama_2": "Moderate drama",
+    "drama_3": "Crossroads of fate",
+    "drama_4": "Parallel universe frenzy",
+    "toggles": "Feature toggles",
+    "black_swan": "Black swan factor",
+    "black_swan_desc": "Allow rare extreme events in simulations",
+    "safety_valve": "Safety valve",
+    "safety_valve_desc": "Dark content warning + emotional recovery + daily limit"
+  },
+  "errors": {
+    "ollama_unavailable": "Cannot connect to Ollama. Make sure it's running on port 11434.",
+    "json_parse": "AI returned unparseable content. Try again with a different phrasing.",
+    "timeout": "Simulation timed out. Check Ollama or try a smaller model.",
+    "generic": "Simulation error: {{detail}}"
   },
   "common": {
     "loading": "Loading…",

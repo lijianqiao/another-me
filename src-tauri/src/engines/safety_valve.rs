@@ -89,3 +89,98 @@ pub struct DailyLimitWarning {
     pub limit: u32,
     pub message: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::emotion::EmotionDimensions;
+    use crate::types::profile::{FinancialStatus, SocialTendency, UserProfile};
+
+    #[test]
+    fn test_dark_content_positive() {
+        assert!(check_dark_content("他最终重病住院"));
+        assert!(check_dark_content("遭遇破产，生活陷入困境"));
+        assert!(check_dark_content("不幸离婚，家庭破裂"));
+        assert!(check_dark_content("猝死在办公室"));
+    }
+
+    #[test]
+    fn test_dark_content_negative() {
+        assert!(!check_dark_content("工作顺利，生活美好"));
+        assert!(!check_dark_content("升职加薪，和家人一起旅行"));
+        assert!(!check_dark_content(""));
+    }
+
+    #[test]
+    fn test_emotional_recovery_three_low() {
+        let emotions = EmotionDimensions {
+            energy: 10.0,
+            satisfaction: 15.0,
+            regret: 90.0,   // 高遗憾 → 100 - 90 = 10 < 20
+            hope: 50.0,
+            loneliness: 50.0,
+        };
+        assert!(needs_emotional_recovery_test(&emotions));
+    }
+
+    #[test]
+    fn test_emotional_recovery_not_needed() {
+        let emotions = EmotionDimensions::neutral();
+        assert!(!needs_emotional_recovery_test(&emotions));
+    }
+
+    #[test]
+    fn test_daily_limit_under() {
+        assert!(check_daily_limit(0).is_none());
+        assert!(check_daily_limit(2).is_none());
+    }
+
+    #[test]
+    fn test_daily_limit_at_limit() {
+        let warning = check_daily_limit(3).expect("应该返回警告");
+        assert_eq!(warning.current_count, 3);
+        assert_eq!(warning.limit, 3);
+    }
+
+    #[test]
+    fn test_daily_limit_over() {
+        assert!(check_daily_limit(5).is_some());
+    }
+
+    #[test]
+    fn test_shine_points_student() {
+        let profile = make_test_profile("学生", vec!["健身".into(), "读书".into()]);
+        let points = generate_shine_points(&profile);
+        assert!(!points.is_empty());
+        assert!(points.len() <= 3);
+    }
+
+    #[test]
+    fn test_shine_points_always_has_some() {
+        let profile = make_test_profile("其他", vec![]);
+        let points = generate_shine_points(&profile);
+        assert!(points.len() >= 2, "至少有默认的两条闪光点");
+    }
+
+    fn make_test_profile(occupation: &str, habits: Vec<String>) -> UserProfile {
+        UserProfile {
+            id: "test-001".into(),
+            created_at: "2025-01-01T00:00:00Z".into(),
+            updated_at: "2025-01-01T00:00:00Z".into(),
+            occupation: occupation.into(),
+            habits,
+            social_tendency: SocialTendency::Neutral,
+            financial_status: FinancialStatus::Stable,
+            personality_tags: vec!["乐观".into()],
+            relationship_status: "单身".into(),
+            health_status: Some("健康".into()),
+            family_background: None,
+            location: None,
+            core_fears: vec![],
+            dreams: vec!["环游世界".into()],
+            hidden_tags: vec![],
+            language: "zh".into(),
+            profile_version: 1,
+        }
+    }
+}

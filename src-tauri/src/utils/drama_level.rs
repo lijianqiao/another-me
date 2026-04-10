@@ -50,3 +50,41 @@ pub fn drama_constraint_text(drama_level: u8) -> &'static str {
         _ => "- 按普通人生推演，避免极端结果",
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_temperature_ranges() {
+        for _ in 0..50 {
+            let t1 = drama_to_temperature(1);
+            assert!((0.3..=0.5).contains(&t1), "档位1温度 {t1} 不在 0.3..0.5");
+
+            let t2 = drama_to_temperature(2);
+            assert!((0.5..=0.7).contains(&t2), "档位2温度 {t2} 不在 0.5..0.7");
+
+            let t3 = drama_to_temperature(3);
+            assert!((0.7..=0.9).contains(&t3), "档位3温度 {t3} 不在 0.7..0.9");
+
+            let t4 = drama_to_temperature(4);
+            assert!((0.9..=1.2).contains(&t4), "档位4温度 {t4} 不在 0.9..1.2");
+        }
+    }
+
+    #[test]
+    fn test_temperature_default() {
+        let t = drama_to_temperature(0);
+        assert!((t - 0.5).abs() < f32::EPSILON);
+        let t = drama_to_temperature(99);
+        assert!((t - 0.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_constraint_text_not_empty() {
+        for level in 1..=4 {
+            let text = drama_constraint_text(level);
+            assert!(!text.is_empty(), "档位 {level} 约束文本不应为空");
+        }
+    }
+}

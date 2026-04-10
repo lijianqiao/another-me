@@ -75,9 +75,18 @@ pub async fn simulate_decision(
         .await
         .map_err(|e| e.to_string())?;
 
-    // 5. 构建 Timeline
+    // 5. 构建 Timeline + 黑天鹅注入
     let decision_id = decision_store::new_decision_id();
-    let timeline = candidate_to_timeline(&candidate, &decision_id);
+    let mut timeline = candidate_to_timeline(&candidate, &decision_id);
+
+    if input.black_swan_enabled && timeline.black_swan_event.is_none() {
+        let event = crate::utils::black_swan::pick_random_black_swan();
+        timeline.narrative = crate::utils::black_swan::inject_black_swan_into_narrative(
+            &timeline.narrative,
+            &event,
+        );
+        timeline.black_swan_event = Some(event);
+    }
 
     // 6. 安全阀检查
     let dark_content_warning = safety_valve::check_dark_content(&timeline.narrative);

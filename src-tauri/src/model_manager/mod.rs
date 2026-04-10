@@ -1,7 +1,6 @@
 //! 模型管理器
 //!
-//! - `local_models` (Sprint 9): Ollama 本地模型 CRUD
-//! - `cloud_providers` (Sprint 10): 云端 Provider 管理
-//! - `credential` (Sprint 10): API Key 系统凭据库
-//!
-//! Sprint 1 占位。
+//! Sprint 4：Ollama 健康检查 + 模型列表
+//! Sprint 9：完整模型管理 UI
+
+pub mod ollama_health;

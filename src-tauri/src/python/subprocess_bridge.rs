@@ -4,7 +4,8 @@
 //! 使用 stdin/stdout JSON 协议通信。对应 ARCH 7.1。
 //!
 //! Sprint 2：使用本地 Python 运行。
-//! Sprint 4：切换为 Tauri Sidecar (PyInstaller 打包)。
+//! Sprint 4：支持 Sidecar 模式（PyInstaller 打包的可执行文件）。
+//! 优先级：Sidecar > 本地 Python。
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -31,28 +32,47 @@ impl PythonBridge {
     /// 启动 Python Worker 进程
     ///
     /// `python_dir`: python/ 目录的绝对路径
+    /// 优先尝试 Sidecar 可执行文件，不存在则回退到 `python main.py`
     pub async fn spawn(python_dir: &PathBuf) -> Result<Self, AppError> {
-        let main_py = python_dir.join("main.py");
-        if !main_py.exists() {
-            return Err(AppError::PythonBridge(format!(
-                "Python 入口不存在: {}",
-                main_py.display()
-            )));
-        }
+        let sidecar_path = Self::find_sidecar(python_dir);
 
-        info!(path = %main_py.display(), "启动 Python Worker");
+        let mut child = if let Some(sidecar) = sidecar_path {
+            info!(path = %sidecar.display(), "使用 Sidecar 模式启动 Python Worker");
+            Command::new(&sidecar)
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .kill_on_drop(true)
+                .spawn()
+                .map_err(|e| {
+                    AppError::PythonBridge(format!(
+                        "Sidecar 启动失败: {e}"
+                    ))
+                })?
+        } else {
+            let main_py = python_dir.join("main.py");
+            if !main_py.exists() {
+                return Err(AppError::PythonBridge(format!(
+                    "Python 入口不存在: {}",
+                    main_py.display()
+                )));
+            }
 
-        let mut child = Command::new("python")
-            .arg(&main_py)
-            .current_dir(python_dir)
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .kill_on_drop(true)
-            .spawn()
-            .map_err(|e| {
-                AppError::PythonBridge(format!("Python 进程启动失败: {e}"))
-            })?;
+            info!(path = %main_py.display(), "使用 Python 解释器启动 Worker");
+            Command::new("python")
+                .arg(&main_py)
+                .current_dir(python_dir)
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .kill_on_drop(true)
+                .spawn()
+                .map_err(|e| {
+                    AppError::PythonBridge(format!(
+                        "Python 进程启动失败: {e}"
+                    ))
+                })?
+        };
 
         let stdin = child
             .stdin
@@ -169,6 +189,35 @@ impl PythonBridge {
                 false
             }
         }
+    }
+
+    /// 在 binaries/ 目录查找 Sidecar 可执行文件
+    fn find_sidecar(python_dir: &PathBuf) -> Option<PathBuf> {
+        let binaries_dir = python_dir
+            .parent()?      // 项目根目录
+            .join("src-tauri")
+            .join("binaries");
+
+        if !binaries_dir.exists() {
+            return None;
+        }
+
+        let exe_suffix = if cfg!(windows) { ".exe" } else { "" };
+
+        let entries = std::fs::read_dir(&binaries_dir).ok()?;
+        for entry in entries.flatten() {
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+            if name_str.starts_with("another-me-worker") && name_str.ends_with(exe_suffix) {
+                let path = entry.path();
+                if path.is_file() {
+                    debug!(path = %path.display(), "找到 Sidecar 可执行文件");
+                    return Some(path);
+                }
+            }
+        }
+
+        None
     }
 }
 

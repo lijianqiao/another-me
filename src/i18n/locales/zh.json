@@ -20,13 +20,23 @@
     "title": "在开始之前，我想了解一下你",
     "next": "下一步",
     "previous": "上一步",
-    "finish": "记住我了"
+    "finish": "记住我了",
+    "step_welcome": "欢迎",
+    "step_basic": "基本信息",
+    "step_habits": "生活习惯",
+    "step_personality": "性格画像"
   },
   "simulate": {
     "title": "新推演",
     "subtitle": "输入一个你正在纠结的人生决定，让推演引擎带你看看可能的未来。",
+    "decision_label": "你正在纠结什么决定？",
     "decision_placeholder": "例如：要不要辞职去创业？",
-    "context_placeholder": "有什么额外背景信息？",
+    "context_label": "补充背景（可选）",
+    "context_placeholder": "有什么额外背景信息？例如：有 3 年工作经验，积蓄 20 万",
+    "horizon_label": "推演时长",
+    "year": "年",
+    "black_swan": "启用黑天鹅因子",
+    "black_swan_hint": "小概率的极端事件将可能注入推演",
     "start": "开始推演",
     "loading_tip": "推演引擎正在工作中...",
     "loading_hint": "推演通常需要 30-120 秒"
@@ -34,15 +44,53 @@
   "results": {
     "title": "推演结果",
     "again": "再来一次",
+    "no_result": "没有推演结果。",
+    "go_simulate": "去推演",
     "timeline": "时间线",
     "key_events": "关键事件",
     "emotions": "情绪维度",
-    "dark_warning": "本次推演包含较为沉重的内容。这只是众多可能性中的一种。",
-    "recovery_tip": "推演中检测到多个情绪维度偏低。记住，真实的人生总有转机。"
+    "dark_warning": "本次推演包含较为沉重的内容。这只是众多可能性中的一种，不代表实际的未来。",
+    "recovery_tip": "推演中检测到多个情绪维度偏低。记住，真实的人生总有转机，AI 推演只是一种参考。如果你感到不安，可以和朋友聊聊。",
+    "dark_dialog_title": "内容预警",
+    "dark_dialog_message": "本次推演结果包含较为沉重的内容（如重病、破产等）。这只是 AI 推演的一种可能性，不代表你的未来。是否继续查看？",
+    "dark_dialog_confirm": "我理解，继续查看",
+    "dark_dialog_cancel": "返回重新推演"
   },
   "letter": {
     "title": "来自未来的信",
     "shine_title": "当下的闪光点"
+  },
+  "settings": {
+    "ollama_title": "推理引擎 (Ollama)",
+    "ollama_status": "连接状态",
+    "ollama_running": "已连接",
+    "ollama_offline": "未检测到",
+    "ollama_refresh": "刷新",
+    "ollama_check_fail": "Ollama 状态检查失败",
+    "target_model": "目标模型",
+    "model_ready": "已就绪",
+    "model_missing": "未下载",
+    "available_models": "已安装模型",
+    "model_pull_hint": "请运行 ollama pull {{model}} 下载目标模型",
+    "ollama_install_hint": "未检测到 Ollama。请访问 ollama.com 下载安装，启动后刷新此页面。",
+    "language": "语言 / Language",
+    "model_id": "模型 ID",
+    "drama_level": "戏剧化默认档位",
+    "drama_1": "普通人的故事",
+    "drama_2": "适度的戏剧",
+    "drama_3": "命运的岔路",
+    "drama_4": "平行宇宙狂热",
+    "toggles": "功能开关",
+    "black_swan": "黑天鹅因子",
+    "black_swan_desc": "允许小概率极端事件注入推演结果",
+    "safety_valve": "安全阀",
+    "safety_valve_desc": "黑暗内容预警 + 情绪回归测试 + 每日推演上限"
+  },
+  "errors": {
+    "ollama_unavailable": "无法连接到 Ollama，请确认 Ollama 已启动且在 11434 端口运行。",
+    "json_parse": "AI 返回了无法解析的内容，请重试。如果反复出现，尝试换一种描述方式。",
+    "timeout": "推演超时，请检查 Ollama 是否正常运行，或尝试使用更小的模型。",
+    "generic": "推演出错：{{detail}}"
   },
   "common": {
     "loading": "加载中…",

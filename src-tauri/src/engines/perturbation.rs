@@ -83,3 +83,49 @@ impl PerturbationFactors {
         parts.join("\n")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_factor_ranges() {
+        for _ in 0..100 {
+            let f = PerturbationFactors::generate(0, true, 0.03);
+            assert!((-0.15..=0.15).contains(&f.luck_factor));
+            assert!((-0.10..=0.10).contains(&f.health_var));
+            assert!((-0.20..=0.20).contains(&f.market_condition));
+            assert!((-0.30..=0.30).contains(&f.habit_offset));
+        }
+    }
+
+    #[test]
+    fn test_black_swan_disabled() {
+        for _ in 0..100 {
+            let f = PerturbationFactors::generate(0, false, 1.0);
+            assert!(!f.black_swan_triggered, "禁用时不应触发黑天鹅");
+        }
+    }
+
+    #[test]
+    fn test_black_swan_guaranteed() {
+        let mut triggered = false;
+        for _ in 0..200 {
+            let f = PerturbationFactors::generate(0, true, 1.0);
+            if f.black_swan_triggered {
+                triggered = true;
+                break;
+            }
+        }
+        assert!(triggered, "概率 1.0 时应必定触发黑天鹅");
+    }
+
+    #[test]
+    fn test_prompt_description_format() {
+        let f = PerturbationFactors::generate(0, true, 1.0);
+        let desc = f.to_prompt_description();
+        assert!(desc.contains("幸运因子"));
+        assert!(desc.contains("健康波动"));
+        assert!(desc.contains("市场条件"));
+    }
+}

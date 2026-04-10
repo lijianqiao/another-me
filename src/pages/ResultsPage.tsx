@@ -1,40 +1,61 @@
 /**
  * 推演结果页
- * 展示时间线卡片 + 未来来信
+ * 展示时间线卡片 + 未来来信 + 黑暗内容确认弹窗
  */
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import TimelineCard from "../components/results/TimelineCard";
+import ConfirmDialog from "../components/common/ConfirmDialog";
 import FutureLetter from "../components/results/FutureLetter";
+import TimelineCard from "../components/results/TimelineCard";
 import { useSimulationStore } from "../store";
 
 export default function ResultsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const result = useSimulationStore((s) => s.fullResult);
   const reset = useSimulationStore((s) => s.reset);
 
+  const [darkConfirmed, setDarkConfirmed] = useState(false);
+
   if (!result) {
     return (
       <section className="results-page">
-        <p>没有推演结果。</p>
-        <button className="btn btn--primary" onClick={() => navigate("/simulate")}>
-          去推演
+        <p>{t("results.no_result")}</p>
+        <button
+          className="btn btn--primary"
+          onClick={() => navigate("/simulate")}
+        >
+          {t("results.go_simulate")}
         </button>
       </section>
     );
   }
 
-  const {
-    timelines,
-    letter,
-    dark_content_warning,
-    emotional_recovery_needed,
-  } = result;
+  const { timelines, letter, dark_content_warning, emotional_recovery_needed } =
+    result;
+
+  const showDarkDialog = dark_content_warning && !darkConfirmed;
 
   return (
     <section className="results-page">
+      <ConfirmDialog
+        open={showDarkDialog}
+        kind="warning"
+        title={t("results.dark_dialog_title")}
+        message={t("results.dark_dialog_message")}
+        confirmText={t("results.dark_dialog_confirm")}
+        cancelText={t("results.dark_dialog_cancel")}
+        onConfirm={() => setDarkConfirmed(true)}
+        onCancel={() => {
+          reset();
+          navigate("/simulate");
+        }}
+      />
+
       <div className="results-page__header">
-        <h2>推演结果</h2>
+        <h2>{t("results.title")}</h2>
         <button
           className="btn"
           onClick={() => {
@@ -42,21 +63,19 @@ export default function ResultsPage() {
             navigate("/simulate");
           }}
         >
-          再来一次
+          {t("results.again")}
         </button>
       </div>
 
-      {dark_content_warning && (
+      {dark_content_warning && darkConfirmed && (
         <div className="results-page__warning">
-          ⚠️ 本次推演包含较为沉重的内容。这只是众多可能性中的一种，不代表实际的未来。
+          ⚠️ {t("results.dark_warning")}
         </div>
       )}
 
       {emotional_recovery_needed && (
         <div className="results-page__recovery">
-          💙 推演中检测到多个情绪维度偏低。
-          记住，真实的人生总有转机，AI 推演只是一种参考。
-          如果你感到不安，可以和朋友聊聊。
+          💙 {t("results.recovery_tip")}
         </div>
       )}
 
@@ -66,9 +85,7 @@ export default function ResultsPage() {
         ))}
       </div>
 
-      {letter && (
-        <FutureLetter letter={letter} />
-      )}
+      {letter && <FutureLetter letter={letter} />}
     </section>
   );
 }

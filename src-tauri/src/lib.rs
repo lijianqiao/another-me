@@ -63,6 +63,7 @@ pub fn run() {
             commands::profile::get_profile,
             commands::settings::get_settings,
             commands::settings::update_settings,
+            commands::settings::check_ollama_status,
             commands::simulate::simulate_once,
             commands::simulate::simulate_decision,
         ])
