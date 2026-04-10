@@ -30,6 +30,7 @@ pub struct FullSimulationResult {
     pub dark_content_warning: bool,
     pub emotional_recovery_needed: bool,
     pub shine_points: Vec<String>,
+    pub decision_tree: Option<serde_json::Value>,
 }
 
 /// 执行完整推演流程（Sprint 5：5 次并发 → 聚类 → 3 条时间线）
@@ -163,12 +164,18 @@ pub async fn simulate_decision(
     .await
     .ok();
 
-    // 9. 构建完整结果
+    // 9. 构建决策树 + 人生走势图数据
+    let tree_data = crate::commands::tree::build_tree(
+        &input.decision_text,
+        &timelines,
+    );
+    let decision_tree = serde_json::to_value(&tree_data).ok();
+
     let sim_result = SimulationResult {
         decision_id: decision_id.clone(),
         timelines: timelines.clone(),
         letter: letter_result.as_ref().map(|l| l.content.clone()),
-        decision_tree: None,
+        decision_tree,
         life_chart: None,
     };
 
@@ -199,6 +206,7 @@ pub async fn simulate_decision(
         dark_content_warning,
         emotional_recovery_needed,
         shine_points,
+        decision_tree,
     })
 }
 

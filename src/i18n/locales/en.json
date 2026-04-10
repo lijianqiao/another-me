@@ -39,7 +39,12 @@
     "black_swan_hint": "Low-probability extreme events may be injected",
     "start": "Start Simulation",
     "loading_tip": "Simulation engine is working...",
-    "loading_hint": "Typically takes 60-180 seconds (5 concurrent runs + clustering)"
+    "loading_hint": "Typically takes 60-180 seconds (5 concurrent runs + clustering)",
+    "profile_check_title": "Any recent changes?",
+    "profile_check_desc": "The simulation engine generates results based on your profile. If your life has changed recently, consider updating your profile first.",
+    "profile_no_change": "No changes, continue",
+    "profile_update": "Update profile",
+    "relationship": "Relationship"
   },
   "results": {
     "title": "Simulation Results",
@@ -58,7 +63,25 @@
     "dark_dialog_title": "Content Warning",
     "dark_dialog_message": "This simulation contains heavy content (e.g., serious illness, bankruptcy). It's just one AI-generated possibility, not your actual future. Continue viewing?",
     "dark_dialog_confirm": "I understand, continue",
-    "dark_dialog_cancel": "Go back"
+    "dark_dialog_cancel": "Go back",
+    "tab_timelines": "Timelines",
+    "tab_tree": "Decision Tree",
+    "tab_chart": "Life Chart",
+    "decision_tree_title": "Decision Branch Map",
+    "life_chart_title": "Life Trajectory Chart",
+    "dim_career": "Career",
+    "dim_financial": "Financial",
+    "dim_health": "Health",
+    "dim_relationship": "Relationship",
+    "dim_satisfaction": "Satisfaction",
+    "emotion_positive": "Positive",
+    "emotion_neutral": "Neutral",
+    "emotion_negative": "Negative"
+  },
+  "history": {
+    "title": "Decision History",
+    "empty": "No simulation records yet. Start your first simulation!",
+    "count": "{{n}} records"
   },
   "letter": {
     "title": "Letter from Future",

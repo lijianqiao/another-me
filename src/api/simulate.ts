@@ -43,6 +43,7 @@ export interface FullSimulationResult {
   dark_content_warning: boolean;
   emotional_recovery_needed: boolean;
   shine_points: string[];
+  decision_tree?: Record<string, unknown> | null;
 }
 
 export async function simulateOnce(

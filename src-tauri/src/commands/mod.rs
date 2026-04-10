@@ -3,10 +3,12 @@
 //! 所有 `#[tauri::command]` 均定义在子模块中，并通过
 //! `lib.rs` 的 `invoke_handler![...]` 注册。
 
+pub mod history;
 pub mod letter;
 pub mod profile;
 pub mod settings;
 pub mod simulate;
+pub mod tree;
 
 /// 应用共享状态（由 `lib.rs` 构造后 `app.manage()` 注入）
 pub struct AppState {

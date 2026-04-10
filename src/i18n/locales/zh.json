@@ -39,7 +39,12 @@
     "black_swan_hint": "小概率的极端事件将可能注入推演",
     "start": "开始推演",
     "loading_tip": "推演引擎正在工作中...",
-    "loading_hint": "推演通常需要 60-180 秒（5 次并发推演 + 聚类）"
+    "loading_hint": "推演通常需要 60-180 秒（5 次并发推演 + 聚类）",
+    "profile_check_title": "最近有什么变化吗？",
+    "profile_check_desc": "推演引擎会基于你的画像生成结果。如果最近生活有变化，建议先更新画像。",
+    "profile_no_change": "没有变化，继续推演",
+    "profile_update": "更新画像",
+    "relationship": "感情状态"
   },
   "results": {
     "title": "推演结果",
@@ -58,7 +63,25 @@
     "dark_dialog_title": "内容预警",
     "dark_dialog_message": "本次推演结果包含较为沉重的内容（如重病、破产等）。这只是 AI 推演的一种可能性，不代表你的未来。是否继续查看？",
     "dark_dialog_confirm": "我理解，继续查看",
-    "dark_dialog_cancel": "返回重新推演"
+    "dark_dialog_cancel": "返回重新推演",
+    "tab_timelines": "时间线",
+    "tab_tree": "决策树",
+    "tab_chart": "走势图",
+    "decision_tree_title": "决策分叉图",
+    "life_chart_title": "人生走势图",
+    "dim_career": "职业",
+    "dim_financial": "财务",
+    "dim_health": "健康",
+    "dim_relationship": "情感",
+    "dim_satisfaction": "满足感",
+    "emotion_positive": "积极",
+    "emotion_neutral": "中性",
+    "emotion_negative": "消极"
+  },
+  "history": {
+    "title": "决策历史",
+    "empty": "还没有推演记录。去开始你的第一次推演吧！",
+    "count": "共 {{n}} 条记录"
   },
   "letter": {
     "title": "来自未来的信",

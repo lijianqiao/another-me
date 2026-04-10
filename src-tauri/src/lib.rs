@@ -126,6 +126,8 @@ pub fn run() {
             commands::settings::check_ollama_status,
             commands::simulate::simulate_once,
             commands::simulate::simulate_decision,
+            commands::history::list_decisions,
+            commands::history::get_decision,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

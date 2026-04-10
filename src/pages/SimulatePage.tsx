@@ -1,11 +1,15 @@
 /**
- * 推演页 — 决策录入 + 加载状态切换 + 增强错误处理
+ * 推演页 — 决策录入 + 画像确认 + 加载状态 + 错误处理
+ *
+ * Sprint 6：增加 ProfileCheckDialog
  */
+import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import DecisionInput from "../components/simulate/DecisionInput";
 import SimulationLoading from "../components/simulate/SimulationLoading";
+import ProfileCheckDialog from "../components/simulate/ProfileCheckDialog";
 import { useSimulationStore, useUiStore } from "../store";
 import type { SimulateInput } from "../types";
 
@@ -16,25 +20,51 @@ export default function SimulatePage() {
   const running = useSimulationStore((s) => s.running);
   const startSimulation = useSimulationStore((s) => s.startSimulation);
 
-  const handleSubmit = async (input: SimulateInput) => {
-    try {
-      await startSimulation(input);
-      navigate("/results");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+  const [showProfileCheck, setShowProfileCheck] = useState(false);
+  const [pendingInput, setPendingInput] = useState<SimulateInput | null>(null);
 
-      if (msg.startsWith("DAILY_LIMIT:")) {
-        pushToast("warning", msg.slice("DAILY_LIMIT:".length));
-      } else if (msg.includes("Connection refused") || msg.includes("error sending request")) {
-        pushToast("error", t("errors.ollama_unavailable"));
-      } else if (msg.includes("JSON") || msg.includes("expected value")) {
-        pushToast("error", t("errors.json_parse"));
-      } else if (msg.includes("timeout") || msg.includes("Timeout")) {
-        pushToast("error", t("errors.timeout"));
-      } else {
-        pushToast("error", t("errors.generic", { detail: msg }));
+  const doSubmit = useCallback(
+    async (input: SimulateInput) => {
+      try {
+        await startSimulation(input);
+        navigate("/results");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+
+        if (msg.startsWith("DAILY_LIMIT:")) {
+          pushToast("warning", msg.slice("DAILY_LIMIT:".length));
+        } else if (
+          msg.includes("Connection refused") ||
+          msg.includes("error sending request")
+        ) {
+          pushToast("error", t("errors.ollama_unavailable"));
+        } else if (msg.includes("JSON") || msg.includes("expected value")) {
+          pushToast("error", t("errors.json_parse"));
+        } else if (msg.includes("timeout") || msg.includes("Timeout")) {
+          pushToast("error", t("errors.timeout"));
+        } else {
+          pushToast("error", t("errors.generic", { detail: msg }));
+        }
       }
+    },
+    [startSimulation, navigate, pushToast, t],
+  );
+
+  const handleSubmit = (input: SimulateInput) => {
+    setPendingInput(input);
+    setShowProfileCheck(true);
+  };
+
+  const handleProfileContinue = () => {
+    setShowProfileCheck(false);
+    if (pendingInput) {
+      doSubmit(pendingInput);
     }
+  };
+
+  const handleProfileEdit = () => {
+    setShowProfileCheck(false);
+    navigate("/onboarding");
   };
 
   if (running) {
@@ -49,6 +79,13 @@ export default function SimulatePage() {
     <section className="simulate-page">
       <h2>{t("simulate.title")}</h2>
       <p className="simulate-page__subtitle">{t("simulate.subtitle")}</p>
+
+      <ProfileCheckDialog
+        open={showProfileCheck}
+        onContinue={handleProfileContinue}
+        onEdit={handleProfileEdit}
+      />
+
       <DecisionInput onSubmit={handleSubmit} disabled={running} />
     </section>
   );
