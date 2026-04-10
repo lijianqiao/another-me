@@ -5,6 +5,7 @@ import HistoryPage from "./pages/HistoryPage";
 import HomePage from "./pages/HomePage";
 import LifeMapPage from "./pages/LifeMapPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import ResultsPage from "./pages/ResultsPage";
 import SettingsPage from "./pages/SettingsPage";
 import SimulatePage from "./pages/SimulatePage";
 
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: "onboarding", element: <OnboardingPage /> },
       { path: "simulate", element: <SimulatePage /> },
+      { path: "results", element: <ResultsPage /> },
       { path: "history", element: <HistoryPage /> },
       { path: "lifemap", element: <LifeMapPage /> },
       { path: "settings", element: <SettingsPage /> },

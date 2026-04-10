@@ -1,12 +1,9 @@
 /**
  * 推演 API 封装
- *
- * Sprint 2：simulate_once（单次推演）
- * Sprint 5：simulate_decision（5 次并发 + 聚类）
  */
 
 import { invokeCommand } from "./tauri";
-import type { SimulateInput } from "../types";
+import type { SimulateInput, Timeline } from "../types";
 
 export interface SimulationCandidate {
   narrative: string;
@@ -33,8 +30,29 @@ export interface SimulationCandidate {
   black_swan_event?: string | null;
 }
 
+export interface LetterResult {
+  content: string;
+  tone_type: string;
+  shine_points: string[];
+}
+
+export interface FullSimulationResult {
+  decision_id: string;
+  timelines: Timeline[];
+  letter: LetterResult | null;
+  dark_content_warning: boolean;
+  emotional_recovery_needed: boolean;
+  shine_points: string[];
+}
+
 export async function simulateOnce(
   input: SimulateInput,
 ): Promise<SimulationCandidate> {
   return invokeCommand<SimulationCandidate>("simulate_once", { input });
+}
+
+export async function simulateDecision(
+  input: SimulateInput,
+): Promise<FullSimulationResult> {
+  return invokeCommand<FullSimulationResult>("simulate_decision", { input });
 }

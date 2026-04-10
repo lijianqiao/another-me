@@ -1,38 +1,35 @@
-# Sprint 2 任务计划：AI 网关 + Python Worker + 单次推演
+# Sprint 3 任务计划：用户界面 + 未来来信 + 安全阀
 
-> **目标：** 输入一个决策，能从 Ollama 拿到一次推演 JSON，并通过 Python 校验现实主义因子
+> **目标：** 用户能通过 UI 完成完整的推演体验
 > **日期：** 2026-04-10
 > **状态：** ✅ complete
 
 ---
 
-## 阶段 A：独立模块 ✅
+## 后端 Rust ✅
 
 | # | 任务 | 文件 | 状态 |
 |---|------|------|------|
-| 2.4 | 扰动因子生成 | `src-tauri/src/engines/perturbation.rs` | ✅ |
-| 2.5 | 戏剧化→Temperature | `src-tauri/src/utils/drama_level.rs` | ✅ |
-| 2.8 | Python Worker 骨架 | `python/` 整体重构 | ✅ |
-| 2.9 | Realism Factor | `python/another_me/nlp/realism_factor.py` | ✅ |
+| 3.5 | simulate_decision 完整实现 | `commands/simulate.rs` | ✅ |
+| 3.6+3.7 | 未来来信生成 + Prompt 模板 | `commands/letter.rs` | ✅ |
+| 3.10 | 安全阀 | `engines/safety_valve.rs` | ✅ |
+| 3.12 | 决策记录存储 | `storage/decision_store.rs` | ✅ |
 
-## 阶段 B：AI 网关 ✅
-
-| # | 任务 | 文件 | 状态 |
-|---|------|------|------|
-| 2.1 | Ollama Chat API | `src-tauri/src/ai/ollama.rs` | ✅ |
-| 2.2 | split_prompt | `src-tauri/src/ai/gateway.rs` | ✅ |
-| 2.3 | UserContextBlock | `src-tauri/src/ai/gateway.rs` | ✅ |
-
-## 阶段 C：组装 ✅
+## 前端 React ✅
 
 | # | 任务 | 文件 | 状态 |
 |---|------|------|------|
-| 2.6 | Prompt 模板 | `src-tauri/src/engines/butterfly.rs` | ✅ |
-| 2.7 | ButterflyEngine 单次推演 | `src-tauri/src/engines/butterfly.rs` | ✅ |
-| 2.10 | PythonBridge（Rust 端） | `src-tauri/src/python/subprocess_bridge.rs` | ✅ |
+| 3.1 | Onboarding 4 步引导 | `pages/OnboardingPage.tsx` | ✅ |
+| 3.2+3.3 | 决策录入 + DramaSlider | `components/simulate/*` | ✅ |
+| 3.4 | SimulationLoading | `components/simulate/SimulationLoading.tsx` | ✅ |
+| 3.8 | TimelineCard | `components/results/TimelineCard.tsx` | ✅ |
+| 3.9 | FutureLetter | `components/results/FutureLetter.tsx` | ✅ |
+| 3.11 | ShinePoints | `components/common/ShinePoints.tsx` | ✅ |
+| 3.13 | simulationStore + 路由 | `store/simulationStore.ts` + `router.tsx` | ✅ |
 
-## 阶段 D：集成验证 ✅
+## 验证 ✅
 
-| # | 任务 | 状态 |
-|---|------|------|
-| 2.11 | cargo check (0 errors) + tsc --noEmit (0 errors) + Python Worker ping/check_realism | ✅ |
+| 检查 | 结果 |
+|---|---|
+| `cargo check` | ✅ 0 errors |
+| `pnpm exec tsc --noEmit` | ✅ 0 errors |

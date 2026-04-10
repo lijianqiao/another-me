@@ -22,11 +22,34 @@
     "previous": "Previous",
     "finish": "Got it"
   },
+  "simulate": {
+    "title": "New Simulation",
+    "subtitle": "Enter a life decision you're struggling with, and let the engine show you possible futures.",
+    "decision_placeholder": "e.g., Should I quit my job to start a business?",
+    "context_placeholder": "Any extra context?",
+    "start": "Start Simulation",
+    "loading_tip": "Simulation engine is working...",
+    "loading_hint": "Typically takes 30-120 seconds"
+  },
+  "results": {
+    "title": "Simulation Results",
+    "again": "Try Again",
+    "timeline": "Timeline",
+    "key_events": "Key Events",
+    "emotions": "Emotions",
+    "dark_warning": "This simulation contains heavy content. It's just one of many possibilities.",
+    "recovery_tip": "Multiple emotion dimensions are low. Remember, real life always has turning points."
+  },
+  "letter": {
+    "title": "Letter from Future",
+    "shine_title": "Bright spots right now"
+  },
   "common": {
     "loading": "Loading…",
     "retry": "Retry",
     "cancel": "Cancel",
     "save": "Save",
-    "error": "Something went wrong"
+    "error": "Something went wrong",
+    "confirm": "Confirm"
   }
 }

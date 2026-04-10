@@ -22,11 +22,34 @@
     "previous": "上一步",
     "finish": "记住我了"
   },
+  "simulate": {
+    "title": "新推演",
+    "subtitle": "输入一个你正在纠结的人生决定，让推演引擎带你看看可能的未来。",
+    "decision_placeholder": "例如：要不要辞职去创业？",
+    "context_placeholder": "有什么额外背景信息？",
+    "start": "开始推演",
+    "loading_tip": "推演引擎正在工作中...",
+    "loading_hint": "推演通常需要 30-120 秒"
+  },
+  "results": {
+    "title": "推演结果",
+    "again": "再来一次",
+    "timeline": "时间线",
+    "key_events": "关键事件",
+    "emotions": "情绪维度",
+    "dark_warning": "本次推演包含较为沉重的内容。这只是众多可能性中的一种。",
+    "recovery_tip": "推演中检测到多个情绪维度偏低。记住，真实的人生总有转机。"
+  },
+  "letter": {
+    "title": "来自未来的信",
+    "shine_title": "当下的闪光点"
+  },
   "common": {
     "loading": "加载中…",
     "retry": "重试",
     "cancel": "取消",
     "save": "保存",
-    "error": "出错了"
+    "error": "出错了",
+    "confirm": "确认"
   }
 }

@@ -12,7 +12,7 @@
 > - 修正4：新增 Cloud API 记忆注入机制（UserContextBlock），解决云端 LLM 无持久记忆问题
 > - 修正5：安装引导流程改为「选择推理Provider」，支持纯云端用户直接跳过 Ollama 安装
 >
-> 
+>
 >
 > **变更记录（v1.2 — 评审修复）：**
 >
@@ -27,7 +27,7 @@
 > - D4：在 `ButterflyEngine` 上添加依赖方向说明注释，标注潜在的架构异味及未来重构方向
 > - D5：修复 `progress_callback` 并发乱序问题，使用 `max_notified` + `MILESTONES` 常量实现单调递增里程碑通知
 >
-> 
+>
 >
 > **变更记录（v1.3）：**
 >
@@ -42,18 +42,18 @@
 > - D4：添加依赖方向说明注释，标注未来可重构为依赖注入
 > - D5：新增 `max_notified` 里程碑追踪 + `MILESTONES` 常量，保证单调递增通知
 >
-> 
+>
 >
 > **变更记录（v1.4）：**
 >
-> - 模型统一为 qwen3.5:4b 
-> - 推演次数 10→5，输出时间线 5→3，MILESTONES/进度条同步更新 
-> - 情绪维度去重：移除 EmotionAnalyzer，LLM 为唯一权威源 
-> - 修复 Ollama 上下文注入：所有 Provider 统一注入 UserContextBlock 
-> - 修复 TF-IDF 聚类多样性算法（Farthest-First Traversal） 
-> - progress_callback 改为 Tauri AppHandle.emit() 事件 
-> - download_model 阻塞调用改为 spawn_blocking 
-> - 新增 12.4 Python Worker 打包分发方案（PyInstaller + Tauri Sidecar） 
+> - 模型统一为 qwen3.5:4b
+> - 推演次数 10→5，输出时间线 5→3，MILESTONES/进度条同步更新
+> - 情绪维度去重：移除 EmotionAnalyzer，LLM 为唯一权威源
+> - 修复 Ollama 上下文注入：所有 Provider 统一注入 UserContextBlock
+> - 修复 TF-IDF 聚类多样性算法（Farthest-First Traversal）
+> - progress_callback 改为 Tauri AppHandle.emit() 事件
+> - download_model 阻塞调用改为 spawn_blocking
+> - 新增 12.4 Python Worker 打包分发方案（PyInstaller + Tauri Sidecar）
 > - Ollama API 从 /api/generate 迁移到 /api/chat（支持 system/user 分离 + JSON mode）
 
 ---
@@ -1098,7 +1098,7 @@ fn split_prompt(prompt: &str) -> (String, String) {
 
 > **问题：** 当用户选择 OpenAI / Anthropic / Qwen / DeepSeek / Gemini 等云端 API 时，云端 LLM 本身是**无状态的**——它不知道你是谁、你的过往推演、你的性格演变。每次 API 调用都是独立的。
 >
-> **解决方案：** 在每次 LLM 调用前，Rust 后端从 SQLite 读取用户画像和因果链，构建一个 `UserContextBlock`，注入到 Prompt 的** system prompt 头部**。这样无论调用哪个 Provider，用户的历史上下文都不会丢失。
+> **解决方案：** 在每次 LLM 调用前，Rust 后端从 SQLite 读取用户画像和因果链，构建一个 `UserContextBlock`，注入到 Prompt 的**system prompt 头部**。这样无论调用哪个 Provider，用户的历史上下文都不会丢失。
 
 #### 2.6.1 UserContextBlock 结构
 
@@ -1387,6 +1387,7 @@ python/
 > **原 `emotion_analyzer.py` 已废弃并移除。**
 >
 > 数据流：
+>
 > ```
 > LLM 推演 JSON → emotion_dimensions（权威源）
 >                        ↓
@@ -1395,10 +1396,9 @@ python/
 > ```
 >
 > Python 仅保留两个职责：
+>
 > 1. `check_realism`：检查 narrative 文本的正负比例是否平衡
 > 2. `cluster_narratives`：TF-IDF 文本聚类
-
-
 
 ### 3.3 TF-IDF 聚类（v1.1 新增，替代 LLM 聚类）
 
@@ -2541,35 +2541,41 @@ impl PythonBridge {
 
 /// Python Worker 生命周期管理器（v1.1 新增）
 pub struct PythonWorkerManager {
-    python_dir: PathBuf,
-    bridge: Arc<tokio::sync::RwLock<Option<Arc<PythonBridge>>>>,
+    python_path: String,
+    bridge: Arc<tokio::sync::RwLock<Option<PythonBridge>>>,
 }
 
 impl PythonWorkerManager {
-    pub fn new(python_dir: PathBuf) -> Self {
+    pub fn new(python_path: String) -> Self {
         Self {
-            python_dir,
+            python_path,
             bridge: Arc::new(tokio::sync::RwLock::new(None)),
         }
     }
 
     /// 获取或启动 Worker（lazy start）
     /// 对外返回 Arc<PythonBridge>，屏蔽内部的 Option 处理和重启逻辑
-    pub async fn get_bridge(&self) -> Result<Arc<PythonBridge>, AppError> {
+    pub async fn get_bridge(&self) -> Result<Arc<PythonBridge>, BridgeError> {
         // 快速路径：先尝试读取，不加写锁
         {
             let guard = self.bridge.read().await;
             if let Some(ref bridge) = *guard {
-                return Ok(Arc::clone(bridge));
+                if bridge.is_alive().await {
+                    return Ok(Arc::clone(bridge));
+                }
             }
         }
 
-        // 慢路径：需要启动
+        // 慢路径：需要写入或重建
         let mut guard = self.bridge.write().await;
-        if guard.is_none() {
-            info!("首次启动 Python Worker...");
-            let bridge = PythonBridge::spawn(&self.python_dir).await?;
-            *guard = Some(Arc::new(bridge));
+        if guard.is_none() || !guard.as_ref().unwrap().is_alive().await {
+            tracing::warn!("Python Worker 未启动或不存活，正在启动/重启...");
+            if let Some(ref mut b) = *guard {
+                // 尝试等待旧进程退出
+                let _ = b.graceful_shutdown().await;
+            }
+            let bridge = PythonBridge::spawn(&self.python_path).await?;
+            *guard = Some(bridge);
         }
 
         Ok(Arc::clone(guard.as_ref().unwrap()))
@@ -3203,6 +3209,7 @@ mod tests {
 ```
 
 **关键变化（v1.1）：**
+
 - 不再强制要求安装 Ollama，用户可先配置云端 API 直接使用
 - 本地模型和云端 API 共存，用户随时可在设置中切换
 - 首次选择跳过时，使用内置默认配置（优先 Ollama 7B，Ollama 不可用时提示配置 API）
@@ -3363,13 +3370,12 @@ jobs:
 #### 12.4.7 GPT-SoVITS 模块特殊处理
 
 GPT-SoVITS 体积过大（5-10GB），不适合 PyInstaller 打包。保持**按需下载**策略：
+
 - 核心 Worker（NLP + 聚类）随应用分发
 - GPT-SoVITS 模型 + 推理引擎在用户点击「开启语音克隆」时后台下载
 - 下载后由核心 Worker 动态加载（`importlib` lazy import）
 
 ___
-
-
 
 *本文档结束*
 

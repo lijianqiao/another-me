@@ -1,64 +1,47 @@
 /**
  * 推演状态管理
  *
- * Sprint 2：simulate_once 单次推演
- * Sprint 5：simulate_decision 5 次并发 + 聚类
+ * Sprint 3：simulate_decision 完整流程
  */
 
 import { create } from "zustand";
 
-import type { SimulateInput, SimulationResult } from "../types";
-import { simulateOnce, type SimulationCandidate } from "../api/simulate";
-
-interface SimulationProgress {
-  current: number;
-  total: number;
-  message: string;
-}
+import type { SimulateInput } from "../types";
+import {
+  simulateDecision,
+  type FullSimulationResult,
+} from "../api/simulate";
 
 interface SimulationState {
   running: boolean;
-  progress: SimulationProgress | null;
-  result: SimulationResult | null;
-  candidate: SimulationCandidate | null;
+  fullResult: FullSimulationResult | null;
   error: string | null;
 
   startSimulation: (input: SimulateInput) => Promise<void>;
-  runOnce: (input: SimulateInput) => Promise<void>;
   reset: () => void;
 }
 
 export const useSimulationStore = create<SimulationState>((set) => ({
   running: false,
-  progress: null,
-  result: null,
-  candidate: null,
+  fullResult: null,
   error: null,
 
-  startSimulation: async (_input) => {
-    set({
-      running: false,
-      error: "simulate_decision 尚未实现（Sprint 5）",
-    });
-  },
-
-  runOnce: async (input) => {
-    set({ running: true, error: null, candidate: null });
+  startSimulation: async (input) => {
+    set({ running: true, error: null, fullResult: null });
     try {
-      const candidate = await simulateOnce(input);
-      set({ running: false, candidate });
+      const result = await simulateDecision(input);
+      set({ running: false, fullResult: result });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       set({ running: false, error: msg });
+      throw err;
     }
   },
 
   reset: () =>
     set({
       running: false,
-      progress: null,
-      result: null,
-      candidate: null,
+      fullResult: null,
       error: null,
     }),
 }));
