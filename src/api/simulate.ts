@@ -43,7 +43,7 @@ export interface FullSimulationResult {
   dark_content_warning: boolean;
   emotional_recovery_needed: boolean;
   shine_points: string[];
-  decision_tree?: Record<string, unknown> | null;
+  decision_tree?: import("./history").TreeNode | null;
 }
 
 export async function simulateOnce(

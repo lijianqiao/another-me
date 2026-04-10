@@ -14,8 +14,8 @@ use crate::commands::AppState;
 use crate::engines::butterfly::{
     ButterflyEngine, ButterflyEngineConfig, SimulationCandidate,
 };
-use crate::engines::safety_valve;
-use crate::storage::{decision_store, profile_store, settings_store};
+use crate::engines::{causal_chain, safety_valve};
+use crate::storage::{decision_store, life_map_store, profile_store, settings_store};
 use crate::types::decision::{SimulateInput, SimulationResult};
 use crate::types::emotion::EmotionDimensions;
 use crate::types::error::AppError;
@@ -67,12 +67,33 @@ pub async fn simulate_decision(
         }
     }
 
-    // 3. 构建上下文
-    let user_context = UserContextBlock {
-        profile_summary: build_profile_summary(&profile),
-        anchor_timeline: None,
-        recent_decisions: vec![],
-        causal_chain_summary: None,
+    // 3. 构建因果链上下文（Sprint 7）
+    let user_context = {
+        let conn = state.db.decisions.lock().await;
+        match causal_chain::build_context(&conn, &profile.id) {
+            Ok(ctx) => {
+                info!(
+                    recent = ctx.recent_decisions.len(),
+                    anchored = ctx.anchor_timeline.is_some(),
+                    "因果链上下文已注入"
+                );
+                UserContextBlock {
+                    profile_summary: build_profile_summary(&profile),
+                    anchor_timeline: ctx.anchor_timeline,
+                    recent_decisions: ctx.recent_decisions,
+                    causal_chain_summary: ctx.causal_chain_summary,
+                }
+            }
+            Err(e) => {
+                warn!(error = %e, "因果链构建失败，使用空上下文");
+                UserContextBlock {
+                    profile_summary: build_profile_summary(&profile),
+                    anchor_timeline: None,
+                    recent_decisions: vec![],
+                    causal_chain_summary: None,
+                }
+            }
+        }
     };
 
     // 4. 构建引擎（含配置）
@@ -170,12 +191,13 @@ pub async fn simulate_decision(
         &timelines,
     );
     let decision_tree = serde_json::to_value(&tree_data).ok();
+    let decision_tree_for_db = decision_tree.clone();
 
     let sim_result = SimulationResult {
         decision_id: decision_id.clone(),
         timelines: timelines.clone(),
         letter: letter_result.as_ref().map(|l| l.content.clone()),
-        decision_tree,
+        decision_tree: decision_tree_for_db,
         life_chart: None,
     };
 
@@ -190,6 +212,34 @@ pub async fn simulate_decision(
             &avg_emotion,
         ) {
             warn!(error = %e, "存储决策记录失败（不影响返回结果）");
+        }
+
+        // 11. 写入人生地图节点（Sprint 7）
+        let outcome_summary: String = timelines
+            .iter()
+            .map(|t| {
+                t.key_events
+                    .last()
+                    .map(|e| format!("{}: {}", e.year, e.event))
+                    .unwrap_or_else(|| {
+                        t.narrative.chars().take(60).collect::<String>()
+                    })
+            })
+            .collect::<Vec<_>>()
+            .join(" / ");
+
+        let node = life_map_store::LifeMapNode {
+            id: life_map_store::new_node_id(),
+            profile_id: profile.id.clone(),
+            decision_id: decision_id.clone(),
+            node_date: chrono::Utc::now().to_rfc3339(),
+            node_label: input.decision_text.chars().take(50).collect(),
+            node_type: "decision".to_string(),
+            outcome_summary,
+            personality_changes: causal_chain::extract_personality_changes_pub(&timelines),
+        };
+        if let Err(e) = life_map_store::save_node(&conn, &node) {
+            warn!(error = %e, "写入人生地图节点失败（不影响返回结果）");
         }
     }
 

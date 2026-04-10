@@ -7,5 +7,6 @@
 //! - `self_evolution` (Sprint 8): 自我进化引擎
 
 pub mod butterfly;
+pub mod causal_chain;
 pub mod perturbation;
 pub mod safety_valve;

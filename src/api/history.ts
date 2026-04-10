@@ -1,5 +1,5 @@
 /**
- * 历史记录 API 封装
+ * 历史记录 + 锚定 + 人生地图 API 封装
  */
 
 import { invokeCommand } from "./tauri";
@@ -42,6 +42,18 @@ export interface HistoricalDecision {
   };
 }
 
+export interface LifeMapNode {
+  id: string;
+  profile_id: string;
+  decision_id: string;
+  node_date: string;
+  node_label: string;
+  node_type: string;
+  outcome_summary: string;
+  personality_changes: string[];
+}
+
+// 决策历史
 export async function listDecisions(): Promise<DecisionSummary[]> {
   return invokeCommand<DecisionSummary[]>("list_decisions");
 }
@@ -52,4 +64,22 @@ export async function getDecision(
   return invokeCommand<HistoricalDecision>("get_decision", {
     decisionId,
   });
+}
+
+// 锚定时间线
+export async function setAnchorTimeline(decisionId: string): Promise<void> {
+  return invokeCommand("set_anchor_timeline", { decisionId });
+}
+
+export async function clearAnchor(decisionId: string): Promise<void> {
+  return invokeCommand("clear_anchor", { decisionId });
+}
+
+export async function getAnchorTimeline(): Promise<string | null> {
+  return invokeCommand<string | null>("get_anchor_timeline");
+}
+
+// 人生地图
+export async function getLifeMap(): Promise<LifeMapNode[]> {
+  return invokeCommand<LifeMapNode[]>("get_life_map");
 }

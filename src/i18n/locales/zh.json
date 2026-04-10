@@ -76,12 +76,24 @@
     "dim_satisfaction": "满足感",
     "emotion_positive": "积极",
     "emotion_neutral": "中性",
-    "emotion_negative": "消极"
+    "emotion_negative": "消极",
+    "set_anchor": "锚定此线",
+    "anchored": "已锚定"
   },
   "history": {
     "title": "决策历史",
     "empty": "还没有推演记录。去开始你的第一次推演吧！",
     "count": "共 {{n}} 条记录"
+  },
+  "lifemap": {
+    "title": "人生地图",
+    "subtitle": "纵览你的决策轨迹，锚定的时间线将影响后续推演。",
+    "empty": "还没有推演记录。完成第一次推演后，这里会展示你的人生时间轴。",
+    "anchored": "已锚定",
+    "set_anchor": "锚定",
+    "unanchor": "取消锚定",
+    "anchor_set": "已锚定此决策，后续推演将承接该时间线上下文",
+    "anchor_cleared": "已取消锚定"
   },
   "letter": {
     "title": "来自未来的信",

@@ -76,12 +76,24 @@
     "dim_satisfaction": "Satisfaction",
     "emotion_positive": "Positive",
     "emotion_neutral": "Neutral",
-    "emotion_negative": "Negative"
+    "emotion_negative": "Negative",
+    "set_anchor": "Anchor this",
+    "anchored": "Anchored"
   },
   "history": {
     "title": "Decision History",
     "empty": "No simulation records yet. Start your first simulation!",
     "count": "{{n}} records"
+  },
+  "lifemap": {
+    "title": "Life Map",
+    "subtitle": "Overview your decision trajectory. Anchored timelines influence future simulations.",
+    "empty": "No simulation records yet. Your life timeline will appear here after your first simulation.",
+    "anchored": "Anchored",
+    "set_anchor": "Anchor",
+    "unanchor": "Unanchor",
+    "anchor_set": "Decision anchored. Future simulations will inherit this timeline's context.",
+    "anchor_cleared": "Anchor removed"
   },
   "letter": {
     "title": "Letter from Future",

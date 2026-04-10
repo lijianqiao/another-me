@@ -1,12 +1,13 @@
-//! 历史记录 Tauri 命令
+//! 历史记录 + 锚定 + 人生地图 Tauri 命令
 //!
 //! Sprint 6：决策列表 + 历史结果查看
+//! Sprint 7：锚定时间线 CRUD + 人生地图
 
 use tauri::State;
 use tracing::info;
 
 use crate::commands::AppState;
-use crate::storage::{decision_store, profile_store};
+use crate::storage::{anchor_store, decision_store, life_map_store, profile_store};
 use crate::types::decision::SimulationResult;
 use crate::types::error::AppError;
 
@@ -23,6 +24,10 @@ pub struct HistoricalDecision {
     pub is_anchored: bool,
     pub result: SimulationResult,
 }
+
+// ============================================================================
+// 决策历史
+// ============================================================================
 
 /// 获取当前用户的所有决策摘要（按时间倒序）
 #[tauri::command]
@@ -71,4 +76,89 @@ pub async fn get_decision(
         is_anchored: stored.is_anchored,
         result,
     })
+}
+
+// ============================================================================
+// 锚定时间线
+// ============================================================================
+
+/// 锚定一条决策时间线（同时清除同 profile 下的旧锚定）
+#[tauri::command]
+pub async fn set_anchor_timeline(
+    decision_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let profile = {
+        let conn = state.db.profiles.lock().await;
+        profile_store::get_current(&conn)?
+            .ok_or_else(|| AppError::ProfileNotFound.to_string())?
+    };
+
+    let conn = state.db.decisions.lock().await;
+    anchor_store::set_anchor(&conn, &profile.id, &decision_id)
+        .map_err(|e| e.to_string())?;
+
+    info!(decision_id = %decision_id, "锚定决策时间线");
+    Ok(())
+}
+
+/// 清除锚定
+#[tauri::command]
+pub async fn clear_anchor(
+    decision_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let profile = {
+        let conn = state.db.profiles.lock().await;
+        profile_store::get_current(&conn)?
+            .ok_or_else(|| AppError::ProfileNotFound.to_string())?
+    };
+
+    let conn = state.db.decisions.lock().await;
+    anchor_store::clear_anchor(&conn, &profile.id, &decision_id)
+        .map_err(|e| e.to_string())?;
+
+    info!(decision_id = %decision_id, "取消锚定");
+    Ok(())
+}
+
+/// 获取当前锚定的决策 ID（如果有）
+#[tauri::command]
+pub async fn get_anchor_timeline(
+    state: State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    let profile = {
+        let conn = state.db.profiles.lock().await;
+        profile_store::get_current(&conn)?
+            .ok_or_else(|| AppError::ProfileNotFound.to_string())?
+    };
+
+    let conn = state.db.decisions.lock().await;
+    let anchored = anchor_store::get_anchored_decision(&conn, &profile.id)
+        .map_err(|e| e.to_string())?;
+
+    Ok(anchored.map(|d| d.id))
+}
+
+// ============================================================================
+// 人生地图
+// ============================================================================
+
+/// 获取用户的人生地图节点列表
+#[tauri::command]
+pub async fn get_life_map(
+    state: State<'_, AppState>,
+) -> Result<Vec<life_map_store::LifeMapNode>, String> {
+    let profile = {
+        let conn = state.db.profiles.lock().await;
+        profile_store::get_current(&conn)?
+            .ok_or_else(|| AppError::ProfileNotFound.to_string())?
+    };
+
+    let conn = state.db.decisions.lock().await;
+    let nodes = life_map_store::get_life_map(&conn, &profile.id)
+        .map_err(|e| e.to_string())?;
+
+    info!(count = nodes.len(), "查询人生地图节点");
+    Ok(nodes)
 }

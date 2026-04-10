@@ -1312,3 +1312,203 @@ a {
 .profile-check__actions .btn {
   flex: 1;
 }
+
+/* ====================================================================
+   Sprint 7 — 锚定 + 人生地图 + ResultsPage actions
+   ==================================================================== */
+
+/* ---------- Results Page Header Actions ---------- */
+.results-page__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn--anchor {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+}
+
+.btn--anchor:hover {
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+
+.btn--anchor-active {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+}
+
+.btn--anchor-active:hover {
+  background: #ddd6fe;
+}
+
+/* ---------- Life Map Page ---------- */
+.lifemap-page {
+  max-width: 680px;
+}
+
+.lifemap-page__header {
+  margin-bottom: 24px;
+}
+
+.lifemap-page__header h2 {
+  margin: 0 0 4px;
+}
+
+.lifemap-page__subtitle {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.lifemap-page__loading {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* ---------- Life Map Component ---------- */
+.lifemap {
+  position: relative;
+  padding-left: 0;
+}
+
+.lifemap-empty {
+  text-align: center;
+  padding: 48px 0;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.lifemap__node {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.lifemap__node--anchored .lifemap__card {
+  border-color: #c4b5fd;
+  background: #faf5ff;
+}
+
+.lifemap__dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.lifemap__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #cbd5e1;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.lifemap__dot--anchored {
+  background: #7c3aed;
+  box-shadow: 0 0 0 2px #7c3aed;
+}
+
+.lifemap__connector {
+  width: 2px;
+  flex: 1;
+  background: #e2e8f0;
+  min-height: 24px;
+}
+
+.lifemap__content {
+  flex: 1;
+  padding-bottom: 24px;
+}
+
+.lifemap__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.lifemap__date {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.lifemap__anchor-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #ede9fe;
+  color: #7c3aed;
+  font-weight: 500;
+}
+
+.lifemap__card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.lifemap__card:hover {
+  border-color: #a5b4fc;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
+}
+
+.lifemap__label {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.lifemap__outcome {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.lifemap__changes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.lifemap__change-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.lifemap__anchor-btn {
+  margin-top: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.lifemap__anchor-btn:hover {
+  border-color: #7c3aed;
+  color: #7c3aed;
+}

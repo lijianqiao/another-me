@@ -1,9 +1,10 @@
 /**
  * 推演结果页
  *
- * Sprint 6：新增决策树 + 人生走势图 + 标签切换
+ * Sprint 6：决策树 + 走势图 + 标签切换
+ * Sprint 7：锚定时间线按钮
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -12,18 +13,33 @@ import FutureLetter from "../components/results/FutureLetter";
 import TimelineCard from "../components/results/TimelineCard";
 import DecisionTree from "../components/results/DecisionTree";
 import LifeChart from "../components/results/LifeChart";
-import { useSimulationStore } from "../store";
+import { getAnchorTimeline, setAnchorTimeline, clearAnchor } from "../api/history";
+import { useSimulationStore, useUiStore } from "../store";
 
 type Tab = "timelines" | "tree" | "chart";
 
 export default function ResultsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const pushToast = useUiStore((s) => s.pushToast);
   const result = useSimulationStore((s) => s.fullResult);
   const reset = useSimulationStore((s) => s.reset);
 
   const [darkConfirmed, setDarkConfirmed] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("timelines");
+  const [isAnchored, setIsAnchored] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAnchorTimeline()
+      .then((anchoredId) => {
+        if (!cancelled && result) {
+          setIsAnchored(anchoredId === result.decision_id);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [result]);
 
   if (!result) {
     return (
@@ -40,6 +56,7 @@ export default function ResultsPage() {
   }
 
   const {
+    decision_id,
     timelines,
     letter,
     dark_content_warning,
@@ -50,6 +67,22 @@ export default function ResultsPage() {
   const showDarkDialog = dark_content_warning && !darkConfirmed;
   const hasTree = !!decision_tree;
   const hasChart = timelines.some((tl) => tl.dimension_scores.length > 0);
+
+  const handleToggleAnchor = async () => {
+    try {
+      if (isAnchored) {
+        await clearAnchor(decision_id);
+        setIsAnchored(false);
+        pushToast("info", t("lifemap.anchor_cleared"));
+      } else {
+        await setAnchorTimeline(decision_id);
+        setIsAnchored(true);
+        pushToast("info", t("lifemap.anchor_set"));
+      }
+    } catch (err) {
+      pushToast("error", t("errors.generic", { detail: String(err) }));
+    }
+  };
 
   return (
     <section className="results-page">
@@ -69,15 +102,25 @@ export default function ResultsPage() {
 
       <div className="results-page__header">
         <h2>{t("results.title")}</h2>
-        <button
-          className="btn"
-          onClick={() => {
-            reset();
-            navigate("/simulate");
-          }}
-        >
-          {t("results.again")}
-        </button>
+        <div className="results-page__actions">
+          <button
+            className={`btn btn--sm ${isAnchored ? "btn--anchor-active" : "btn--anchor"}`}
+            onClick={handleToggleAnchor}
+          >
+            {isAnchored
+              ? `⚓ ${t("results.anchored")}`
+              : `⚓ ${t("results.set_anchor")}`}
+          </button>
+          <button
+            className="btn"
+            onClick={() => {
+              reset();
+              navigate("/simulate");
+            }}
+          >
+            {t("results.again")}
+          </button>
+        </div>
       </div>
 
       {dark_content_warning && darkConfirmed && (
@@ -92,7 +135,6 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* Tab 切换 */}
       {(hasTree || hasChart) && (
         <div className="results-page__tabs">
           <button
@@ -120,7 +162,6 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* 时间线卡片 */}
       {activeTab === "timelines" && (
         <div className="results-page__timelines">
           {timelines.map((tl, i) => (
@@ -129,12 +170,10 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* 决策树 */}
       {activeTab === "tree" && hasTree && (
         <DecisionTree tree={decision_tree!} />
       )}
 
-      {/* 人生走势图 */}
       {activeTab === "chart" && hasChart && (
         <LifeChart timelines={timelines} />
       )}

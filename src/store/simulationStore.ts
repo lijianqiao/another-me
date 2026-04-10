@@ -1,29 +1,24 @@
 /**
  * 推演状态管理
  *
- * Sprint 6：增加 setHistoricalResult 和 decision_tree 支持
+ * Sprint 7：统一 FullSimulationResult（含 decision_tree）
  */
 
 import { create } from "zustand";
 
 import type { SimulateInput } from "../types";
-import type { TreeNode } from "../api/history";
 import {
   simulateDecision,
   type FullSimulationResult,
 } from "../api/simulate";
 
-export interface EnrichedResult extends FullSimulationResult {
-  decision_tree?: TreeNode;
-}
-
 interface SimulationState {
   running: boolean;
-  fullResult: EnrichedResult | null;
+  fullResult: FullSimulationResult | null;
   error: string | null;
 
   startSimulation: (input: SimulateInput) => Promise<void>;
-  setHistoricalResult: (result: EnrichedResult) => void;
+  setHistoricalResult: (result: FullSimulationResult) => void;
   reset: () => void;
 }
 
