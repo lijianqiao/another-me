@@ -13,7 +13,7 @@ use crate::commands::letter::{self, LetterResult};
 use crate::commands::AppState;
 use crate::engines::butterfly::{ButterflyEngine, SimulationCandidate};
 use crate::engines::safety_valve;
-use crate::storage::{decision_store, profile_store};
+use crate::storage::{decision_store, profile_store, settings_store};
 use crate::types::decision::{SimulateInput, SimulationResult};
 use crate::types::emotion::EmotionDimensions;
 use crate::types::error::AppError;
@@ -36,6 +36,15 @@ pub async fn simulate_decision(
     input: SimulateInput,
     state: State<'_, AppState>,
 ) -> Result<FullSimulationResult, String> {
+    // 0. 从设置同步模型 ID 到 AI Gateway
+    {
+        let conn = state.db.settings.lock().await;
+        let settings = settings_store::get_all(&conn).map_err(|e| e.to_string())?;
+        info!(model = %settings.active_model_id, "同步模型设置到 AI Gateway");
+        let mut gw = state.ai_gateway.write().await;
+        gw.set_ollama_model(settings.active_model_id);
+    }
+
     // 1. 取画像
     let profile = {
         let conn = state.db.profiles.lock().await;
@@ -156,6 +165,14 @@ pub async fn simulate_once(
     input: SimulateInput,
     state: State<'_, AppState>,
 ) -> Result<SimulationCandidate, String> {
+    // 同步模型设置
+    {
+        let conn = state.db.settings.lock().await;
+        let settings = settings_store::get_all(&conn).map_err(|e| e.to_string())?;
+        let mut gw = state.ai_gateway.write().await;
+        gw.set_ollama_model(settings.active_model_id);
+    }
+
     let profile = {
         let conn = state.db.profiles.lock().await;
         profile_store::get_current(&conn)?

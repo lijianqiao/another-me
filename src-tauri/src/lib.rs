@@ -22,8 +22,9 @@ pub mod types;
 pub mod utils;
 
 use crate::ai::gateway::{AIGateway, AIGatewayConfig};
+use crate::ai::ollama::OllamaConfig;
 use crate::commands::AppState;
-use crate::storage::Databases;
+use crate::storage::{settings_store, Databases};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -49,11 +50,22 @@ pub fn run() {
                 }
             };
 
-            // 初始化 AI Gateway（默认 Ollama）
-            let ai_gateway = Arc::new(RwLock::new(AIGateway::new(
-                AIGatewayConfig::default(),
-            )));
-            info!("AI Gateway initialized");
+            // 从设置中读取模型 ID，初始化 AI Gateway
+            let model_id = {
+                let conn = db.settings.blocking_lock();
+                settings_store::get_all(&conn)
+                    .map(|s| s.active_model_id)
+                    .unwrap_or_else(|_| "qwen3.5:4b".to_string())
+            };
+            let gateway_config = AIGatewayConfig {
+                ollama: OllamaConfig {
+                    model: model_id.clone(),
+                    ..OllamaConfig::default()
+                },
+                ..AIGatewayConfig::default()
+            };
+            let ai_gateway = Arc::new(RwLock::new(AIGateway::new(gateway_config)));
+            info!(model = %model_id, "AI Gateway initialized with settings model");
 
             app.manage(AppState { db, ai_gateway });
             Ok(())
