@@ -140,12 +140,8 @@ pub fn calculate_evolution_level(feedback_count: u32) -> u32 {
 }
 
 /// 计算允许的最大戏剧化档位
-pub fn max_drama_level(total_simulations: u32) -> u8 {
-    match total_simulations {
-        0..=4 => 2,
-        5..=9 => 3,
-        _ => 4,
-    }
+pub fn max_drama_level(_total_simulations: u32) -> u8 {
+    4
 }
 
 #[cfg(test)]
@@ -163,22 +159,32 @@ mod tests {
 
     #[test]
     fn test_max_drama() {
-        assert_eq!(max_drama_level(0), 2);
-        assert_eq!(max_drama_level(4), 2);
-        assert_eq!(max_drama_level(5), 3);
+        assert_eq!(max_drama_level(0), 4);
+        assert_eq!(max_drama_level(4), 4);
+        assert_eq!(max_drama_level(5), 4);
         assert_eq!(max_drama_level(10), 4);
     }
 
     #[test]
     fn test_generate_corrections_empty() {
         let profile = UserProfile {
-            id: "p1".into(), created_at: "".into(), updated_at: "".into(),
-            occupation: "工程师".into(), habits: vec![], social_tendency: crate::types::profile::SocialTendency::Neutral,
+            id: "p1".into(),
+            created_at: "".into(),
+            updated_at: "".into(),
+            occupation: "工程师".into(),
+            habits: vec![],
+            social_tendency: crate::types::profile::SocialTendency::Neutral,
             financial_status: crate::types::profile::FinancialStatus::Stable,
             personality_tags: vec!["乐观".into(), "冒险".into()],
-            relationship_status: "单身".into(), health_status: None, family_background: None,
-            location: None, core_fears: vec![], dreams: vec![], hidden_tags: vec![],
-            language: "zh".into(), profile_version: 1,
+            relationship_status: "单身".into(),
+            health_status: None,
+            family_background: None,
+            location: None,
+            core_fears: vec![],
+            dreams: vec![],
+            hidden_tags: vec![],
+            language: "zh".into(),
+            profile_version: 1,
         };
         let corrections = generate_corrections(&profile, &[]);
         assert!(corrections.is_empty());
@@ -187,13 +193,23 @@ mod tests {
     #[test]
     fn test_generate_corrections_personality() {
         let profile = UserProfile {
-            id: "p1".into(), created_at: "".into(), updated_at: "".into(),
-            occupation: "工程师".into(), habits: vec![], social_tendency: crate::types::profile::SocialTendency::Neutral,
+            id: "p1".into(),
+            created_at: "".into(),
+            updated_at: "".into(),
+            occupation: "工程师".into(),
+            habits: vec![],
+            social_tendency: crate::types::profile::SocialTendency::Neutral,
             financial_status: crate::types::profile::FinancialStatus::Stable,
             personality_tags: vec!["冒险".into(), "乐观".into()],
-            relationship_status: "单身".into(), health_status: None, family_background: None,
-            location: None, core_fears: vec![], dreams: vec![], hidden_tags: vec![],
-            language: "zh".into(), profile_version: 1,
+            relationship_status: "单身".into(),
+            health_status: None,
+            family_background: None,
+            location: None,
+            core_fears: vec![],
+            dreams: vec![],
+            hidden_tags: vec![],
+            language: "zh".into(),
+            profile_version: 1,
         };
         let corrections = generate_corrections(&profile, &["personality_冒险".to_string()]);
         assert!(!corrections.is_empty());

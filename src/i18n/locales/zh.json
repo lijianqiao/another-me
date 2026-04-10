@@ -147,6 +147,7 @@
     "tab_timelines": "时间线",
     "tab_tree": "决策树",
     "tab_chart": "走势图",
+    "tab_letter": "未来来信",
     "decision_tree_title": "决策分叉图",
     "life_chart_title": "人生走势图",
     "dim_career": "职业",
@@ -181,6 +182,7 @@
   },
   "letter": {
     "title": "来自未来的信",
+    "copy": "复制信件",
     "shine_title": "✨ 当下的闪光点",
     "tone_tired": "疲惫感慨型",
     "tone_silent": "沉默疏离型",

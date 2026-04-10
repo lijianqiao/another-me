@@ -1,7 +1,8 @@
 /**
  * 未来来信展示组件
- * 信件全文 + 闪光点
+ * 信件全文 + 闪光点 + 复制按钮
  */
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ShinePoints from "../common/ShinePoints";
@@ -25,6 +26,11 @@ const TONE_META: Record<string, { emoji: string; key: string }> = {
   "黑色幽默型": { emoji: "🃏", key: "letter.tone_dark" },
 };
 
+/** Normalize literal escaped newlines from JSON (\\n) into real newlines */
+function normalizeContent(raw: string): string {
+  return raw.replace(/\\n/g, "\n");
+}
+
 export default function FutureLetter({ letter }: Props) {
   const { t } = useTranslation();
   const { content, tone_type, shine_points } = letter;
@@ -32,16 +38,36 @@ export default function FutureLetter({ letter }: Props) {
   const emoji = meta?.emoji ?? "✉️";
   const toneLabel = meta ? t(meta.key) : tone_type;
 
+  const normalized = normalizeContent(content);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(normalized);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* fallback: ignore */
+    }
+  };
+
   return (
     <div className="future-letter">
       <div className="future-letter__header">
         <span className="future-letter__icon">{emoji}</span>
         <h3 className="future-letter__title">{t("letter.title")}</h3>
         <span className="future-letter__tone">{toneLabel}</span>
+        <button
+          className="future-letter__copy"
+          onClick={handleCopy}
+          title={t("letter.copy")}
+        >
+          {copied ? "✓" : "📋"}
+        </button>
       </div>
 
       <div className="future-letter__content">
-        {content.split("\n").map((line, i) => (
+        {normalized.split("\n").map((line, i) => (
           <p key={i} className={line.trim() === "" ? "future-letter__break" : ""}>
             {line}
           </p>

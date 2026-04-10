@@ -25,7 +25,7 @@ import { openPathInExplorer } from "../api/system";
 import { downloadAsFile, exportElementAsPng } from "../utils/export";
 import { useSimulationStore, useUiStore } from "../store";
 
-type Tab = "timelines" | "tree" | "chart";
+type Tab = "timelines" | "tree" | "chart" | "letter";
 
 export default function ResultsPage() {
   const { t } = useTranslation();
@@ -50,7 +50,7 @@ export default function ResultsPage() {
           setIsAnchored(anchoredId === result.decision_id);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => { cancelled = true; };
   }, [result]);
 
@@ -234,6 +234,14 @@ export default function ResultsPage() {
               {t("results.tab_chart")}
             </button>
           )}
+          {letter && (
+            <button
+              className={`results-page__tab ${activeTab === "letter" ? "results-page__tab--active" : ""}`}
+              onClick={() => setActiveTab("letter")}
+            >
+              {t("results.tab_letter")}
+            </button>
+          )}
         </div>
       )}
 
@@ -259,7 +267,7 @@ export default function ResultsPage() {
         <LifeChart timelines={timelines} />
       )}
 
-      {letter && <FutureLetter letter={letter} />}
+      {activeTab === "letter" && letter && <FutureLetter letter={letter} />}
 
       <FeedbackButtons
         decisionId={decision_id}

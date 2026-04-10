@@ -147,6 +147,7 @@
     "tab_timelines": "Timelines",
     "tab_tree": "Decision Tree",
     "tab_chart": "Life Chart",
+    "tab_letter": "Future Letter",
     "decision_tree_title": "Decision Branch Map",
     "life_chart_title": "Life Trajectory Chart",
     "dim_career": "Career",
@@ -181,6 +182,7 @@
   },
   "letter": {
     "title": "Letter from the Future",
+    "copy": "Copy letter",
     "shine_title": "✨ Bright spots right now",
     "tone_tired": "Weary and wistful",
     "tone_silent": "Silent and distant",

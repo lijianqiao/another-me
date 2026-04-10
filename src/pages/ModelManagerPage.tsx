@@ -26,31 +26,31 @@ const CLOUD_PROVIDERS = [
   {
     id: "openai",
     label: "OpenAI",
-    defaultModel: "gpt-4o",
+    defaultModel: "gpt-5.4-mini",
     defaultBase: "https://api.openai.com",
   },
   {
     id: "anthropic",
     label: "Anthropic",
-    defaultModel: "claude-sonnet-4-20250514",
+    defaultModel: "claude-sonnet-4-6",
     defaultBase: "https://api.anthropic.com",
   },
   {
     id: "qwen",
     label: "Qwen / DashScope",
-    defaultModel: "qwen-plus",
+    defaultModel: "qwen3.6-plus",
     defaultBase: "https://dashscope.aliyuncs.com/compatible-mode/v1",
   },
   {
     id: "deepseek",
     label: "DeepSeek",
-    defaultModel: "deepseek-chat",
+    defaultModel: "deepseek-v3.2",
     defaultBase: "https://api.deepseek.com/v1",
   },
   {
     id: "gemini",
     label: "Google Gemini",
-    defaultModel: "gemini-2.0-flash",
+    defaultModel: "gemini-2.5-flash",
     defaultBase: "https://generativelanguage.googleapis.com",
   },
 ] as const;
@@ -274,9 +274,8 @@ export default function ModelManagerPage() {
                 <div className="cloud-provider-card__header">
                   <span className="cloud-provider-card__name">{cp.label}</span>
                   <span
-                    className={`cloud-provider-card__badge ${
-                      hasKey ? "cloud-provider-card__badge--ok" : ""
-                    }`}
+                    className={`cloud-provider-card__badge ${hasKey ? "cloud-provider-card__badge--ok" : ""
+                      }`}
                   >
                     {hasKey
                       ? t("settings.key_configured")

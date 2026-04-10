@@ -10,7 +10,7 @@ interface Props {
   maxLevel?: number;
 }
 
-export default function DramaSlider({ value, onChange, maxLevel = 2 }: Props) {
+export default function DramaSlider({ value, onChange, maxLevel = 4 }: Props) {
   const { t } = useTranslation();
 
   return (

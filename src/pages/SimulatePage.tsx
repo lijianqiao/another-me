@@ -3,7 +3,7 @@
  *
  * Sprint 6：增加 ProfileCheckDialog
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -18,7 +18,15 @@ export default function SimulatePage() {
   const navigate = useNavigate();
   const pushToast = useUiStore((s) => s.pushToast);
   const running = useSimulationStore((s) => s.running);
+  const fullResult = useSimulationStore((s) => s.fullResult);
   const startSimulation = useSimulationStore((s) => s.startSimulation);
+
+  /* Navigate reactively when a new result arrives */
+  useEffect(() => {
+    if (fullResult && !running) {
+      navigate("/results");
+    }
+  }, [fullResult, running, navigate]);
 
   const [showProfileCheck, setShowProfileCheck] = useState(false);
   const [pendingInput, setPendingInput] = useState<SimulateInput | null>(null);
@@ -27,7 +35,7 @@ export default function SimulatePage() {
     async (input: SimulateInput) => {
       try {
         await startSimulation(input);
-        navigate("/results");
+        /* Navigation is handled by the useEffect watching fullResult */
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
 

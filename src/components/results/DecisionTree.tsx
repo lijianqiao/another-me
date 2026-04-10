@@ -14,11 +14,11 @@ interface Props {
   tree: TreeNode;
 }
 
-interface HierarchyNode extends d3.HierarchyPointNode<TreeNode> {}
+interface HierarchyNode extends d3.HierarchyPointNode<TreeNode> { }
 
-const MARGIN = { top: 20, right: 140, bottom: 20, left: 120 };
-const NODE_RADIUS = 8;
-const ROW_HEIGHT = 36;
+const MARGIN = { top: 30, right: 160, bottom: 30, left: 140 };
+const NODE_RADIUS = 10;
+const ROW_HEIGHT = 48;
 
 export default function DecisionTree({ tree }: Props) {
   const { t } = useTranslation();
@@ -35,33 +35,54 @@ export default function DecisionTree({ tree }: Props) {
 
     const root = d3.hierarchy(tree);
     const leafCount = root.leaves().length;
-    const height = Math.max(300, leafCount * ROW_HEIGHT + MARGIN.top + MARGIN.bottom);
-    const width = Math.max(containerWidth, 600);
+    const height = Math.max(360, leafCount * ROW_HEIGHT + MARGIN.top + MARGIN.bottom);
+    const width = Math.max(containerWidth, 700);
 
     const treeLayout = d3
       .tree<TreeNode>()
       .size([
         height - MARGIN.top - MARGIN.bottom,
         width - MARGIN.left - MARGIN.right,
-      ]);
+      ])
+      .separation((a, b) => (a.parent === b.parent ? 1 : 1.3));
 
     const rootNode = treeLayout(root);
 
     svg.attr("width", width).attr("height", height);
 
+    /* -------- defs: drop shadow + gradient -------- */
+    const defs = svg.append("defs");
+
+    const filter = defs
+      .append("filter")
+      .attr("id", "dtree-shadow")
+      .attr("x", "-40%")
+      .attr("y", "-40%")
+      .attr("width", "180%")
+      .attr("height", "180%");
+    filter
+      .append("feDropShadow")
+      .attr("dx", 0)
+      .attr("dy", 1)
+      .attr("stdDeviation", 2)
+      .attr("flood-color", "rgba(0,0,0,0.12)");
+
     const g = svg
       .append("g")
       .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
 
-    // links
+    /* -------- links: smooth curves -------- */
     g.selectAll(".dtree-link")
       .data(rootNode.links())
       .enter()
       .append("path")
       .attr("class", "dtree-link")
       .attr("fill", "none")
-      .attr("stroke", "#cbd5e1")
-      .attr("stroke-width", 1.5)
+      .attr("stroke", (d) => {
+        const c = d3.color(d.target.data.color);
+        return c ? c.copy({ opacity: 0.35 }).formatRgb() : "#cbd5e1";
+      })
+      .attr("stroke-width", 2)
       .attr(
         "d",
         d3
@@ -70,7 +91,7 @@ export default function DecisionTree({ tree }: Props) {
           .y((d) => d.x) as any,
       );
 
-    // nodes
+    /* -------- nodes -------- */
     const nodeGroup = g
       .selectAll<SVGGElement, HierarchyNode>(".dtree-node")
       .data(rootNode.descendants())
@@ -83,23 +104,38 @@ export default function DecisionTree({ tree }: Props) {
         setSelected(d.data);
       });
 
+    /* outer glow ring for decision node */
+    nodeGroup
+      .filter((d: HierarchyNode) => d.data.node_type === "decision")
+      .append("circle")
+      .attr("r", NODE_RADIUS + 6)
+      .attr("fill", "none")
+      .attr("stroke", (d: HierarchyNode) => d.data.color)
+      .attr("stroke-width", 1.5)
+      .attr("stroke-dasharray", "3 3")
+      .attr("opacity", 0.5);
+
     nodeGroup
       .append("circle")
       .attr("r", (d: HierarchyNode) =>
-        d.data.node_type === "decision" ? NODE_RADIUS + 3 : NODE_RADIUS,
+        d.data.node_type === "decision" ? NODE_RADIUS + 4 : NODE_RADIUS,
       )
       .attr("fill", (d: HierarchyNode) => d.data.color)
       .attr("stroke", "#fff")
-      .attr("stroke-width", 2);
+      .attr("stroke-width", 2.5)
+      .attr("filter", "url(#dtree-shadow)");
 
     nodeGroup
       .append("text")
       .attr("dy", "0.32em")
-      .attr("x", (d: HierarchyNode) => (d.children ? -14 : 14))
+      .attr("x", (d: HierarchyNode) => (d.children ? -16 : 16))
       .attr("text-anchor", (d: HierarchyNode) =>
         d.children ? "end" : "start",
       )
       .attr("font-size", "12px")
+      .attr("font-weight", (d: HierarchyNode) =>
+        d.data.node_type === "decision" ? "600" : "400",
+      )
       .attr("fill", "#334155")
       .text((d: HierarchyNode) => {
         const maxLen = d.data.node_type === "event" ? 30 : 20;
