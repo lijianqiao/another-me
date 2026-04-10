@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import EvolutionBadge from "../components/common/EvolutionBadge";
 import { useProfileStore } from "../store";
+import { Button } from "../components/ui/button";
 
 export default function HomePage() {
   const { t } = useTranslation();
@@ -24,12 +25,12 @@ export default function HomePage() {
   return (
     <section className="home-page">
       <h2>{t("home.welcome")}</h2>
-      <p className="home-page__tagline">{t("app.tagline")}</p>
+      <p className="home-page__tagline text-muted-foreground mb-6">{t("app.tagline")}</p>
       <EvolutionBadge />
-      <div className="home-page__actions">
-        <Link to="/simulate" className="btn btn--primary">
-          {t("home.start_simulation")}
-        </Link>
+      <div className="home-page__actions flex items-center gap-3 mt-6">
+        <Button asChild>
+          <Link to="/simulate">{t("home.start_simulation")}</Link>
+        </Button>
       </div>
     </section>
   );

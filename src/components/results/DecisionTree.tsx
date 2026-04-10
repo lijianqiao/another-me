@@ -53,6 +53,7 @@ export default function DecisionTree({ tree }: Props) {
     /* -------- defs: drop shadow + gradient -------- */
     const defs = svg.append("defs");
 
+    // Inner shadow for nodes
     const filter = defs
       .append("filter")
       .attr("id", "dtree-shadow")
@@ -63,15 +64,36 @@ export default function DecisionTree({ tree }: Props) {
     filter
       .append("feDropShadow")
       .attr("dx", 0)
-      .attr("dy", 1)
-      .attr("stdDeviation", 2)
-      .attr("flood-color", "rgba(0,0,0,0.12)");
+      .attr("dy", 2)
+      .attr("stdDeviation", 3)
+      .attr("flood-color", "rgba(0,0,0,0.5)");
+
+    // Outer glow for active nodes
+    const glowFilter = defs
+      .append("filter")
+      .attr("id", "dtree-glow")
+      .attr("x", "-50%")
+      .attr("y", "-50%")
+      .attr("width", "200%")
+      .attr("height", "200%");
+    glowFilter
+      .append("feGaussianBlur")
+      .attr("stdDeviation", 4)
+      .attr("result", "coloredBlur");
+    const feMerge = glowFilter.append("feMerge");
+    feMerge.append("feMergeNode").attr("in", "coloredBlur");
+    feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
     const g = svg
       .append("g")
       .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
 
     /* -------- links: smooth curves -------- */
+    const linkGen = d3
+      .linkHorizontal<d3.HierarchyPointLink<TreeNode>, d3.HierarchyPointNode<TreeNode>>()
+      .x((d) => d.y)
+      .y((d) => d.x);
+
     g.selectAll(".dtree-link")
       .data(rootNode.links())
       .enter()
@@ -79,17 +101,15 @@ export default function DecisionTree({ tree }: Props) {
       .attr("class", "dtree-link")
       .attr("fill", "none")
       .attr("stroke", (d) => {
-        const c = d3.color(d.target.data.color);
-        return c ? c.copy({ opacity: 0.35 }).formatRgb() : "#cbd5e1";
+        // Main path gets neon cyan, alternatives get violet or dim colors
+        if (d.target.data.node_type === "decision") return "#0ff"; // neon cyan for decisions
+        if (d.target.data.node_type === "timeline") return "#a855f7"; // violet for alternate timelines
+        return "#334155"; // slate for events
       })
-      .attr("stroke-width", 2)
-      .attr(
-        "d",
-        d3
-          .linkHorizontal<d3.HierarchyPointLink<TreeNode>, d3.HierarchyPointNode<TreeNode>>()
-          .x((d) => d.y)
-          .y((d) => d.x) as any,
-      );
+      .attr("stroke-width", (d) => (d.target.data.node_type === "decision" ? 3 : 1.5))
+      .attr("stroke-dasharray", (d) => (d.target.data.node_type === "timeline" ? "4,4" : "none"))
+      .attr("opacity", (d) => (d.target.data.node_type === "timeline" ? 0.4 : 0.8))
+      .attr("d", linkGen as any);
 
     /* -------- nodes -------- */
     const nodeGroup = g
@@ -100,6 +120,7 @@ export default function DecisionTree({ tree }: Props) {
       .attr("class", "dtree-node")
       .attr("transform", (d: HierarchyNode) => `translate(${d.y},${d.x})`)
       .style("cursor", "pointer")
+      .attr("opacity", (d: HierarchyNode) => (d.data.node_type === "timeline" ? 0.6 : 1))
       .on("click", (_evt: MouseEvent, d: HierarchyNode) => {
         setSelected(d.data);
       });
@@ -108,27 +129,35 @@ export default function DecisionTree({ tree }: Props) {
     nodeGroup
       .filter((d: HierarchyNode) => d.data.node_type === "decision")
       .append("circle")
-      .attr("r", NODE_RADIUS + 6)
+      .attr("r", NODE_RADIUS + 8)
       .attr("fill", "none")
-      .attr("stroke", (d: HierarchyNode) => d.data.color)
-      .attr("stroke-width", 1.5)
-      .attr("stroke-dasharray", "3 3")
-      .attr("opacity", 0.5);
+      .attr("stroke", "#0ff")
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "4 4")
+      .attr("opacity", 0.6)
+      .attr("filter", "url(#dtree-glow)");
 
     nodeGroup
       .append("circle")
       .attr("r", (d: HierarchyNode) =>
         d.data.node_type === "decision" ? NODE_RADIUS + 4 : NODE_RADIUS,
       )
-      .attr("fill", (d: HierarchyNode) => d.data.color)
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 2.5)
-      .attr("filter", "url(#dtree-shadow)");
+      .attr("fill", (d: HierarchyNode) => {
+        if (d.data.node_type === "decision") return "#002b36"; // dark blue inner
+        return d.data.node_type === "timeline" ? "#2e1065" : "#0f172a";
+      })
+      .attr("stroke", (d: HierarchyNode) => {
+        if (d.data.node_type === "decision") return "#0ff"; // neon cyan
+        if (d.data.node_type === "timeline") return "#a855f7"; // violet
+        return "#64748b"; // slate
+      })
+      .attr("stroke-width", 2)
+      .attr("filter", (d: HierarchyNode) => d.data.node_type === "decision" ? "url(#dtree-glow)" : "url(#dtree-shadow)");
 
     nodeGroup
       .append("text")
       .attr("dy", "0.32em")
-      .attr("x", (d: HierarchyNode) => (d.children ? -16 : 16))
+      .attr("x", (d: HierarchyNode) => (d.children ? -20 : 20))
       .attr("text-anchor", (d: HierarchyNode) =>
         d.children ? "end" : "start",
       )
@@ -136,7 +165,9 @@ export default function DecisionTree({ tree }: Props) {
       .attr("font-weight", (d: HierarchyNode) =>
         d.data.node_type === "decision" ? "600" : "400",
       )
-      .attr("fill", "#334155")
+      .attr("fill", (d: HierarchyNode) =>
+        d.data.node_type === "decision" ? "#e2e8f0" : "#94a3b8"
+      )
       .text((d: HierarchyNode) => {
         const maxLen = d.data.node_type === "event" ? 30 : 20;
         return d.data.label.length > maxLen
@@ -153,33 +184,33 @@ export default function DecisionTree({ tree }: Props) {
   }, [draw]);
 
   return (
-    <div className="decision-tree">
-      <h3 className="decision-tree__title">
+    <div className="relative w-full bg-slate-950/40 rounded-xl border border-slate-800/60 overflow-hidden backdrop-blur-sm">
+      <h3 className="absolute top-4 left-6 text-sm font-semibold tracking-wider text-slate-300 z-10 select-none">
         {t("results.decision_tree_title")}
       </h3>
-      <div className="decision-tree__container" ref={containerRef}>
-        <svg ref={svgRef} />
+      <div className="w-full h-full overflow-auto" ref={containerRef}>
+        <svg ref={svgRef} className="select-none" />
       </div>
       {selected && (
-        <div className="decision-tree__detail">
-          <div className="decision-tree__detail-header">
+        <div className="absolute right-4 top-4 w-72 bg-slate-900 border border-[#0ff]/30 shadow-[0_0_30px_rgba(0,255,255,0.05)] rounded-lg p-5 z-20 backdrop-blur-xl">
+          <div className="flex items-center gap-3 border-b border-slate-800 pb-3 mb-1">
             <span
-              className="decision-tree__detail-dot"
-              style={{ background: selected.color }}
+              className="w-3 h-3 rounded-full drop-shadow-[0_0_8px_rgba(0,255,255,0.8)]"
+              style={{ background: "#0ff" }}
             />
-            <strong>{selected.label}</strong>
+            <strong className="text-[#0ff] font-medium tracking-wide">{selected.label}</strong>
             <button
-              className="decision-tree__detail-close"
+              className="text-muted-foreground hover:text-white transition-colors"
               onClick={() => setSelected(null)}
             >
               ✕
             </button>
           </div>
           {selected.detail && (
-            <p className="decision-tree__detail-text">{selected.detail}</p>
+            <p className="mt-4 text-sm text-slate-300 leading-relaxed">{selected.detail}</p>
           )}
           {selected.emotion && (
-            <span className="decision-tree__detail-emotion">
+            <span className="inline-block mt-4 text-xs px-2 py-1 bg-slate-800 rounded text-slate-400 border border-slate-700">
               {selected.emotion === "positive"
                 ? "🟢 " + t("results.emotion_positive")
                 : selected.emotion === "negative"
