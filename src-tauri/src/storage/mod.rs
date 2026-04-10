@@ -9,6 +9,7 @@
 
 pub mod anchor_store;
 pub mod decision_store;
+pub mod feedback_store;
 pub mod life_map_store;
 pub mod profile_store;
 pub mod settings_store;

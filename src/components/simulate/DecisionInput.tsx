@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import DramaSlider from "./DramaSlider";
 import { useSettingsStore } from "../../store";
+import { getEvolutionInfo } from "../../api/feedback";
 import type { SimulateInput, TimeHorizon } from "../../types";
 
 interface Props {
@@ -26,6 +27,7 @@ export default function DecisionInput({ onSubmit, disabled }: Props) {
   const [horizon, setHorizon] = useState<TimeHorizon>("3y");
   const [drama, setDrama] = useState(settingsDrama || 1);
   const [blackSwan, setBlackSwan] = useState(settingsBlackSwan);
+  const [maxDrama, setMaxDrama] = useState(2);
 
   useEffect(() => {
     setDrama(settingsDrama || 1);
@@ -34,6 +36,12 @@ export default function DecisionInput({ onSubmit, disabled }: Props) {
   useEffect(() => {
     setBlackSwan(settingsBlackSwan);
   }, [settingsBlackSwan]);
+
+  useEffect(() => {
+    getEvolutionInfo()
+      .then((info) => setMaxDrama(info.max_drama_level))
+      .catch(() => setMaxDrama(2));
+  }, []);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -98,7 +106,7 @@ export default function DecisionInput({ onSubmit, disabled }: Props) {
         </div>
       </div>
 
-      <DramaSlider value={drama} onChange={setDrama} maxLevel={4} />
+      <DramaSlider value={drama} onChange={setDrama} maxLevel={maxDrama} />
 
       <label className="decision-input__toggle">
         <input

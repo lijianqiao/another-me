@@ -1512,3 +1512,241 @@ a {
   border-color: #7c3aed;
   color: #7c3aed;
 }
+
+/* ============================================================================
+ * Sprint 8: Feedback Buttons
+ * ============================================================================ */
+
+.feedback-buttons {
+  margin-top: 32px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.feedback-buttons--done {
+  text-align: center;
+}
+
+.feedback-buttons__thanks {
+  color: #059669;
+  font-weight: 500;
+}
+
+.feedback-buttons__row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn--feedback {
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.btn--not-me {
+  background: #fff;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+}
+
+.btn--not-me:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
+.btn--accurate {
+  background: #fff;
+  border: 1px solid #86efac;
+  color: #16a34a;
+}
+
+.btn--accurate:hover {
+  background: #f0fdf4;
+  border-color: #16a34a;
+}
+
+.feedback-reasons {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.feedback-reasons__title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.feedback-reasons__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.feedback-reasons__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.feedback-reasons__item input[type="checkbox"] {
+  accent-color: #6366f1;
+}
+
+.feedback-reasons__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ============================================================================
+ * Sprint 8: Profile Correction Dialog
+ * ============================================================================ */
+
+.profile-correction-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.profile-correction-dialog {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  max-width: 460px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.profile-correction-dialog h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #1e293b;
+}
+
+.profile-correction-dialog__desc {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.profile-correction-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.profile-correction-item {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.profile-correction-item__header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.profile-correction-item__field {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.profile-correction-item__confidence {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.profile-correction-item__values {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.profile-correction-item__old {
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.profile-correction-item__arrow {
+  color: #6366f1;
+}
+
+.profile-correction-item__new {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.profile-correction-item__done {
+  font-size: 12px;
+  color: #059669;
+  font-weight: 500;
+}
+
+/* ============================================================================
+ * Sprint 8: Evolution Badge
+ * ============================================================================ */
+
+.evolution-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
+  border-radius: 12px;
+  margin: 12px 0;
+}
+
+.evolution-badge__icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #6366f1;
+  color: #fff;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.evolution-badge__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.evolution-badge__level {
+  font-size: 14px;
+  font-weight: 600;
+  color: #312e81;
+}
+
+.evolution-badge__count {
+  font-size: 12px;
+  color: #6366f1;
+}

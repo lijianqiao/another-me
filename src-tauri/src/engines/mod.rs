@@ -10,3 +10,4 @@ pub mod butterfly;
 pub mod causal_chain;
 pub mod perturbation;
 pub mod safety_valve;
+pub mod self_evolution;

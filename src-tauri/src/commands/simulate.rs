@@ -4,6 +4,7 @@
 //! 取画像 → 检查上限 → 同步模型 → 5 次并发推演 → TF-IDF 聚类 →
 //! 安全阀校验 → 生成来信 → 存储 → 返回
 
+use std::time::Instant;
 use tauri::State;
 use tracing::{info, warn};
 use uuid::Uuid;
@@ -40,6 +41,8 @@ pub async fn simulate_decision(
     state: State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<FullSimulationResult, String> {
+    let t_start = Instant::now();
+
     // 0. 从设置同步模型 ID 到 AI Gateway
     {
         let conn = state.db.settings.lock().await;
@@ -119,6 +122,7 @@ pub async fn simulate_decision(
     }
 
     // 5. 执行批量推演（5 次并发 → 聚类 → 3 条候选）
+    let t_llm_start = Instant::now();
     let candidates = engine
         .simulate_batch(
             &profile,
@@ -131,6 +135,9 @@ pub async fn simulate_decision(
         )
         .await
         .map_err(|e| format!("[simulate_decision] {e}"))?;
+
+    let llm_elapsed = t_llm_start.elapsed();
+    info!(llm_ms = llm_elapsed.as_millis(), "LLM 批量推演耗时");
 
     // 6. 将候选转为 Timeline
     let decision_id = decision_store::new_decision_id();
@@ -243,9 +250,12 @@ pub async fn simulate_decision(
         }
     }
 
+    let total_elapsed = t_start.elapsed();
     info!(
         decision_id = %decision_id,
         timelines = timelines.len(),
+        total_ms = total_elapsed.as_millis(),
+        llm_ms = llm_elapsed.as_millis(),
         "推演完成"
     );
 

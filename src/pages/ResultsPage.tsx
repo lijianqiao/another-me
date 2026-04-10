@@ -3,6 +3,7 @@
  *
  * Sprint 6：决策树 + 走势图 + 标签切换
  * Sprint 7：锚定时间线按钮
+ * Sprint 8：反馈按钮 + 画像修正
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,10 +11,13 @@ import { useNavigate } from "react-router-dom";
 
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import FutureLetter from "../components/results/FutureLetter";
+import FeedbackButtons from "../components/results/FeedbackButtons";
+import ProfileCorrectionDialog from "../components/results/ProfileCorrectionDialog";
 import TimelineCard from "../components/results/TimelineCard";
 import DecisionTree from "../components/results/DecisionTree";
 import LifeChart from "../components/results/LifeChart";
 import { getAnchorTimeline, setAnchorTimeline, clearAnchor } from "../api/history";
+import type { ProfileCorrectionSuggestion } from "../api/feedback";
 import { useSimulationStore, useUiStore } from "../store";
 
 type Tab = "timelines" | "tree" | "chart";
@@ -28,6 +32,9 @@ export default function ResultsPage() {
   const [darkConfirmed, setDarkConfirmed] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("timelines");
   const [isAnchored, setIsAnchored] = useState(false);
+  const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false);
+  const [correctionFeedbackId, setCorrectionFeedbackId] = useState("");
+  const [corrections, setCorrections] = useState<ProfileCorrectionSuggestion[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,6 +186,22 @@ export default function ResultsPage() {
       )}
 
       {letter && <FutureLetter letter={letter} />}
+
+      <FeedbackButtons
+        decisionId={decision_id}
+        onCorrections={(fid, corrs) => {
+          setCorrectionFeedbackId(fid);
+          setCorrections(corrs);
+          setCorrectionDialogOpen(true);
+        }}
+      />
+
+      <ProfileCorrectionDialog
+        open={correctionDialogOpen}
+        feedbackId={correctionFeedbackId}
+        corrections={corrections}
+        onClose={() => setCorrectionDialogOpen(false)}
+      />
     </section>
   );
 }

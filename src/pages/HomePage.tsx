@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
+import EvolutionBadge from "../components/common/EvolutionBadge";
 import { useProfileStore } from "../store";
 
 export default function HomePage() {
@@ -24,6 +25,7 @@ export default function HomePage() {
     <section className="home-page">
       <h2>{t("home.welcome")}</h2>
       <p className="home-page__tagline">{t("app.tagline")}</p>
+      <EvolutionBadge />
       <div className="home-page__actions">
         <Link to="/simulate" className="btn btn--primary">
           {t("home.start_simulation")}

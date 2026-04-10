@@ -132,6 +132,9 @@ pub fn run() {
             commands::history::clear_anchor,
             commands::history::get_anchor_timeline,
             commands::history::get_life_map,
+            commands::feedback::submit_feedback,
+            commands::feedback::apply_correction,
+            commands::feedback::get_evolution_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
