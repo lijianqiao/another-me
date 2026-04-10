@@ -135,6 +135,16 @@ pub fn run() {
             commands::feedback::submit_feedback,
             commands::feedback::apply_correction,
             commands::feedback::get_evolution_info,
+            commands::model::list_models,
+            commands::model::switch_model,
+            commands::model::delete_model,
+            commands::model::download_model,
+            commands::export::export_decision_json,
+            commands::export::export_all_json,
+            commands::settings::save_api_key,
+            commands::settings::delete_api_key,
+            commands::settings::list_api_key_status,
+            commands::settings::switch_provider,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

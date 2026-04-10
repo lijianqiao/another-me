@@ -8,6 +8,7 @@
 //! - `settings.db`   — 应用设置（key-value）
 
 pub mod anchor_store;
+pub mod credential_store;
 pub mod decision_store;
 pub mod feedback_store;
 pub mod life_map_store;

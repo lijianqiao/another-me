@@ -1750,3 +1750,234 @@ a {
   font-size: 12px;
   color: #6366f1;
 }
+
+/* ============================================================================
+ * Sprint 9: Model Manager
+ * ============================================================================ */
+
+.model-manager-page {
+  max-width: 640px;
+  padding: 24px;
+}
+
+.model-manager-page h2 {
+  margin: 0 0 8px;
+}
+
+.model-manager-page__desc {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.model-manager__download {
+  margin-bottom: 28px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.model-manager__download h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.model-manager__download-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.model-manager__download-row .settings-input {
+  flex: 1;
+  min-width: 200px;
+  max-width: none;
+}
+
+.model-manager__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.model-manager__empty {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.model-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.model-card--active {
+  border-color: #c4b5fd;
+  background: #faf5ff;
+}
+
+.model-card__info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.model-card__name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1e293b;
+  word-break: break-all;
+}
+
+.model-card__size {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.model-card__badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-weight: 500;
+}
+
+.model-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn--danger {
+  border-color: #fecaca;
+  color: #dc2626;
+  background: #fff;
+}
+
+.btn--danger:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+/* ============================================================================
+ * Sprint 9: Export Dropdown
+ * ============================================================================ */
+
+.export-dropdown {
+  position: relative;
+}
+
+.export-dropdown__menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 100px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.export-dropdown__menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.export-dropdown__menu button:hover {
+  background: #f1f5f9;
+}
+
+/* ============================================================================
+ * Sprint 10: Cloud Provider Cards
+ * ============================================================================ */
+
+.settings-section__desc {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.cloud-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cloud-provider-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #fafbfc;
+}
+
+.cloud-provider-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.cloud-provider-card__name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.cloud-provider-card__badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.cloud-provider-card__badge--ok {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.cloud-provider-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cloud-provider-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cloud-provider-card__model {
+  margin-top: 8px;
+}
+
+.settings-input--sm {
+  font-size: 12px;
+  padding: 4px 8px;
+}

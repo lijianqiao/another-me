@@ -8,7 +8,25 @@
     "simulate": "新推演",
     "history": "历史",
     "lifemap": "人生地图",
+    "models": "模型",
     "settings": "设置"
+  },
+  "models": {
+    "title": "模型管理",
+    "subtitle": "查看已安装的 Ollama 模型，切换当前使用的模型，或下载新模型。",
+    "load_failed": "无法加载模型列表，请确认 Ollama 已启动。",
+    "switched": "已切换为 {{model}}",
+    "download_started": "已开始下载 {{model}}，完成后会提示。",
+    "download_title": "下载新模型",
+    "download_placeholder": "例如 qwen3.5:4b",
+    "download_btn": "下载",
+    "downloading": "下载中…",
+    "empty": "暂无已安装模型，或无法连接 Ollama。",
+    "active": "当前使用",
+    "use": "使用",
+    "delete": "删除",
+    "delete_confirm_title": "删除模型",
+    "delete_confirm_msg": "确定要从本机删除模型「{{model}}」吗？此操作不可撤销。"
   },
   "home": {
     "welcome": "欢迎回来",
@@ -78,7 +96,9 @@
     "emotion_neutral": "中性",
     "emotion_negative": "消极",
     "set_anchor": "锚定此线",
-    "anchored": "已锚定"
+    "anchored": "已锚定",
+    "export": "导出",
+    "export_done": "导出完成"
   },
   "history": {
     "title": "决策历史",
@@ -123,7 +143,17 @@
     "black_swan": "黑天鹅因子",
     "black_swan_desc": "允许小概率极端事件注入推演结果",
     "safety_valve": "安全阀",
-    "safety_valve_desc": "黑暗内容预警 + 情绪回归测试 + 每日推演上限"
+    "safety_valve_desc": "黑暗内容预警 + 情绪回归测试 + 每日推演上限",
+    "cloud_title": "云端 API",
+    "cloud_desc": "配置云端 AI 提供商的 API Key，可在推演时使用云端模型替代本地 Ollama。",
+    "key_configured": "已配置",
+    "key_not_set": "未配置",
+    "key_set": "设置 Key",
+    "key_update": "更新 Key",
+    "key_saved": "API Key 已保存",
+    "key_deleted": "API Key 已删除",
+    "provider_switched": "已切换到 {{provider}}",
+    "back_to_ollama": "切回本地 Ollama"
   },
   "errors": {
     "ollama_unavailable": "无法连接到 Ollama，请确认 Ollama 已启动且在 11434 端口运行。",

@@ -12,6 +12,7 @@ use std::time::Duration;
 use tracing::info;
 
 use crate::ai::ollama::{self, OllamaConfig};
+use crate::ai::{anthropic, gemini, openai, openai_compat};
 use crate::types::error::AppError;
 use crate::types::profile::UserProfile;
 
@@ -31,9 +32,17 @@ pub enum AIProvider {
 }
 
 #[derive(Debug, Clone)]
+pub struct CloudProviderConfig {
+    pub api_key: String,
+    pub model: String,
+    pub base_url: Option<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct AIGatewayConfig {
     pub provider: AIProvider,
     pub ollama: OllamaConfig,
+    pub cloud: Option<CloudProviderConfig>,
 }
 
 impl Default for AIGatewayConfig {
@@ -41,6 +50,7 @@ impl Default for AIGatewayConfig {
         Self {
             provider: AIProvider::Ollama,
             ollama: OllamaConfig::default(),
+            cloud: None,
         }
     }
 }
@@ -112,22 +122,85 @@ impl AIGateway {
                 )
                 .await
             }
-            AIProvider::OpenAI => Err(AppError::AiGateway(
-                "OpenAI API 尚未实现".to_string(),
-            )),
-            AIProvider::Anthropic => Err(AppError::AiGateway(
-                "Anthropic API 尚未实现".to_string(),
-            )),
-            AIProvider::Qwen => {
-                Err(AppError::AiGateway("Qwen API 尚未实现".to_string()))
+            AIProvider::OpenAI => {
+                let c = self.cloud_cfg()?;
+                openai::call_openai(
+                    &self.client,
+                    &c.api_key,
+                    &c.model,
+                    c.base_url.as_deref(),
+                    system_prompt,
+                    user_prompt,
+                    temperature,
+                )
+                .await
             }
-            AIProvider::DeepSeek => Err(AppError::AiGateway(
-                "DeepSeek API 尚未实现".to_string(),
-            )),
-            AIProvider::Gemini => Err(AppError::AiGateway(
-                "Gemini API 尚未实现".to_string(),
-            )),
+            AIProvider::Anthropic => {
+                let c = self.cloud_cfg()?;
+                anthropic::call_anthropic(
+                    &self.client,
+                    &c.api_key,
+                    &c.model,
+                    system_prompt,
+                    user_prompt,
+                    temperature,
+                )
+                .await
+            }
+            AIProvider::Qwen => {
+                let c = self.cloud_cfg()?;
+                let base = c.base_url.as_deref()
+                    .unwrap_or("https://dashscope.aliyuncs.com/compatible-mode/v1");
+                openai_compat::call_openai_compat(
+                    &self.client,
+                    &c.api_key,
+                    &c.model,
+                    base,
+                    system_prompt,
+                    user_prompt,
+                    temperature,
+                    "Qwen/DashScope",
+                )
+                .await
+            }
+            AIProvider::DeepSeek => {
+                let c = self.cloud_cfg()?;
+                let base = c.base_url.as_deref()
+                    .unwrap_or("https://api.deepseek.com/v1");
+                openai_compat::call_openai_compat(
+                    &self.client,
+                    &c.api_key,
+                    &c.model,
+                    base,
+                    system_prompt,
+                    user_prompt,
+                    temperature,
+                    "DeepSeek",
+                )
+                .await
+            }
+            AIProvider::Gemini => {
+                let c = self.cloud_cfg()?;
+                gemini::call_gemini(
+                    &self.client,
+                    &c.api_key,
+                    &c.model,
+                    system_prompt,
+                    user_prompt,
+                    temperature,
+                )
+                .await
+            }
         }
+    }
+
+    fn cloud_cfg(&self) -> Result<&CloudProviderConfig, AppError> {
+        self.config.cloud.as_ref().ok_or_else(|| {
+            AppError::AiGateway(format!(
+                "{:?} 需要配置 API Key 和模型",
+                self.config.provider
+            ))
+        })
     }
 
     pub fn provider(&self) -> AIProvider {
@@ -136,6 +209,14 @@ impl AIGateway {
 
     pub fn set_ollama_model(&mut self, model: String) {
         self.config.ollama.model = model;
+    }
+
+    pub fn set_provider(&mut self, provider: AIProvider) {
+        self.config.provider = provider;
+    }
+
+    pub fn set_cloud_config(&mut self, cloud: CloudProviderConfig) {
+        self.config.cloud = Some(cloud);
     }
 }
 

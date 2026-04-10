@@ -1,11 +1,13 @@
-//! 应用设置 + Ollama 检测 命令
+//! 应用设置 + Ollama 检测 + 云端 API Key 管理 命令
 
+use serde::{Deserialize, Serialize};
 use tauri::State;
-use tracing::debug;
+use tracing::{debug, info};
 
+use crate::ai::gateway::{AIProvider, CloudProviderConfig};
 use crate::commands::AppState;
 use crate::model_manager::ollama_health::{self, OllamaStatus};
-use crate::storage::settings_store;
+use crate::storage::{credential_store, settings_store};
 use crate::types::settings::{AppSettings, AppSettingsPatch};
 
 #[tauri::command]
@@ -46,4 +48,122 @@ pub async fn check_ollama_status(
     .await;
 
     Ok(status)
+}
+
+// ============================================================================
+// Sprint 10: API Key 管理 + Provider 切换
+// ============================================================================
+
+#[derive(Debug, Deserialize)]
+pub struct SaveApiKeyInput {
+    pub provider: String,
+    pub api_key: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ProviderKeyStatus {
+    pub provider: String,
+    pub has_key: bool,
+}
+
+fn parse_provider(s: &str) -> Result<AIProvider, String> {
+    match s {
+        "ollama" => Ok(AIProvider::Ollama),
+        "openai" => Ok(AIProvider::OpenAI),
+        "anthropic" => Ok(AIProvider::Anthropic),
+        "qwen" => Ok(AIProvider::Qwen),
+        "deepseek" => Ok(AIProvider::DeepSeek),
+        "gemini" => Ok(AIProvider::Gemini),
+        _ => Err(format!("未知 Provider: {s}")),
+    }
+}
+
+fn provider_to_str(p: AIProvider) -> &'static str {
+    match p {
+        AIProvider::Ollama => "ollama",
+        AIProvider::OpenAI => "openai",
+        AIProvider::Anthropic => "anthropic",
+        AIProvider::Qwen => "qwen",
+        AIProvider::DeepSeek => "deepseek",
+        AIProvider::Gemini => "gemini",
+    }
+}
+
+#[tauri::command]
+pub async fn save_api_key(
+    input: SaveApiKeyInput,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let conn = state.db.settings.lock().await;
+    credential_store::store_api_key(&conn, &input.provider, &input.api_key)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_api_key(
+    provider: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let conn = state.db.settings.lock().await;
+    credential_store::delete_api_key(&conn, &provider).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_api_key_status(
+    state: State<'_, AppState>,
+) -> Result<Vec<ProviderKeyStatus>, String> {
+    let conn = state.db.settings.lock().await;
+    let providers = ["openai", "anthropic", "qwen", "deepseek", "gemini"];
+    Ok(providers
+        .iter()
+        .map(|p| ProviderKeyStatus {
+            provider: p.to_string(),
+            has_key: credential_store::has_api_key(&conn, p),
+        })
+        .collect())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SwitchProviderInput {
+    pub provider: String,
+    pub model: String,
+    pub base_url: Option<String>,
+}
+
+#[tauri::command]
+pub async fn switch_provider(
+    input: SwitchProviderInput,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let provider = parse_provider(&input.provider)?;
+
+    if provider == AIProvider::Ollama {
+        let mut gw = state.ai_gateway.write().await;
+        gw.set_provider(AIProvider::Ollama);
+        gw.set_ollama_model(input.model.clone());
+        info!(model = %input.model, "切换到 Ollama");
+        return Ok(());
+    }
+
+    let api_key = {
+        let conn = state.db.settings.lock().await;
+        credential_store::get_api_key(&conn, &input.provider)
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("未设置 {} API Key", input.provider))?
+    };
+
+    let mut gw = state.ai_gateway.write().await;
+    gw.set_provider(provider);
+    gw.set_cloud_config(CloudProviderConfig {
+        api_key,
+        model: input.model.clone(),
+        base_url: input.base_url,
+    });
+
+    info!(
+        provider = provider_to_str(provider),
+        model = %input.model,
+        "切换 AI Provider 完成"
+    );
+    Ok(())
 }

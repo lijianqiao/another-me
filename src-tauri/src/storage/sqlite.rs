@@ -238,4 +238,10 @@ CREATE TABLE IF NOT EXISTS settings (
     value       TEXT NOT NULL,
     updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS api_keys (
+    provider        TEXT PRIMARY KEY,
+    encrypted_key   TEXT NOT NULL,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
 "#;

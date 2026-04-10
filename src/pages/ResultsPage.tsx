@@ -18,6 +18,8 @@ import DecisionTree from "../components/results/DecisionTree";
 import LifeChart from "../components/results/LifeChart";
 import { getAnchorTimeline, setAnchorTimeline, clearAnchor } from "../api/history";
 import type { ProfileCorrectionSuggestion } from "../api/feedback";
+import { exportDecisionJson } from "../api/export";
+import { downloadAsFile, exportElementAsPng } from "../utils/export";
 import { useSimulationStore, useUiStore } from "../store";
 
 type Tab = "timelines" | "tree" | "chart";
@@ -35,6 +37,7 @@ export default function ResultsPage() {
   const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false);
   const [correctionFeedbackId, setCorrectionFeedbackId] = useState("");
   const [corrections, setCorrections] = useState<ProfileCorrectionSuggestion[]>([]);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,6 +121,43 @@ export default function ResultsPage() {
               ? `⚓ ${t("results.anchored")}`
               : `⚓ ${t("results.set_anchor")}`}
           </button>
+          <div className="export-dropdown">
+            <button
+              className="btn btn--sm"
+              onClick={() => setShowExportMenu((p) => !p)}
+            >
+              {t("results.export")}
+            </button>
+            {showExportMenu && (
+              <div className="export-dropdown__menu">
+                <button
+                  onClick={async () => {
+                    setShowExportMenu(false);
+                    try {
+                      const json = await exportDecisionJson(decision_id);
+                      downloadAsFile(json, `another-me-${decision_id.slice(0, 8)}.json`);
+                      pushToast("info", t("results.export_done"));
+                    } catch (err) { pushToast("error", String(err)); }
+                  }}
+                >
+                  JSON
+                </button>
+                {hasTree && (
+                  <button
+                    onClick={async () => {
+                      setShowExportMenu(false);
+                      try {
+                        await exportElementAsPng(".decision-tree", `decision-tree-${decision_id.slice(0, 8)}.png`);
+                        pushToast("info", t("results.export_done"));
+                      } catch (err) { pushToast("error", String(err)); }
+                    }}
+                  >
+                    PNG
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <button
             className="btn"
             onClick={() => {

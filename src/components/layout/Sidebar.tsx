@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: "/simulate", key: "simulate" },
   { to: "/history", key: "history" },
   { to: "/lifemap", key: "lifemap" },
+  { to: "/models", key: "models" },
   { to: "/settings", key: "settings" },
 ] as const;
 

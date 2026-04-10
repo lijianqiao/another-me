@@ -1,0 +1,88 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-python-worker:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: python-worker-windows
+          - os: macos-latest
+            artifact: python-worker-macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install Python dependencies
+        working-directory: python
+        run: uv pip install -e ".[build]" --system
+
+      - name: Build Python worker
+        working-directory: python
+        run: python build.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: python/dist/
+
+  build-tauri:
+    needs: build-python-worker
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            python-artifact: python-worker-windows
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            python-artifact: python-worker-macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.python-artifact }}
+          path: src-tauri/binaries/
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Another Me ${{ github.ref_name }}"
+          releaseBody: "See CHANGELOG for details."
+          releaseDraft: true
+          prerelease: false
+          args: --target ${{ matrix.target }}

@@ -8,7 +8,25 @@
     "simulate": "New Simulation",
     "history": "History",
     "lifemap": "Life Map",
+    "models": "Models",
     "settings": "Settings"
+  },
+  "models": {
+    "title": "Model Manager",
+    "subtitle": "View installed Ollama models, switch the active model, or pull a new one.",
+    "load_failed": "Could not load models. Make sure Ollama is running.",
+    "switched": "Switched to {{model}}",
+    "download_started": "Started downloading {{model}}. You will be notified when done.",
+    "download_title": "Pull a new model",
+    "download_placeholder": "e.g. qwen3.5:4b",
+    "download_btn": "Download",
+    "downloading": "Downloading…",
+    "empty": "No models found, or Ollama is unreachable.",
+    "active": "Active",
+    "use": "Use",
+    "delete": "Delete",
+    "delete_confirm_title": "Delete model",
+    "delete_confirm_msg": "Remove model \"{{model}}\" from this machine? This cannot be undone."
   },
   "home": {
     "welcome": "Welcome back",
@@ -78,7 +96,9 @@
     "emotion_neutral": "Neutral",
     "emotion_negative": "Negative",
     "set_anchor": "Anchor this",
-    "anchored": "Anchored"
+    "anchored": "Anchored",
+    "export": "Export",
+    "export_done": "Export complete"
   },
   "history": {
     "title": "Decision History",
@@ -123,7 +143,17 @@
     "black_swan": "Black swan factor",
     "black_swan_desc": "Allow rare extreme events in simulations",
     "safety_valve": "Safety valve",
-    "safety_valve_desc": "Dark content warning + emotional recovery + daily limit"
+    "safety_valve_desc": "Dark content warning + emotional recovery + daily limit",
+    "cloud_title": "Cloud API",
+    "cloud_desc": "Configure cloud AI provider API keys to use cloud models instead of local Ollama.",
+    "key_configured": "Configured",
+    "key_not_set": "Not set",
+    "key_set": "Set Key",
+    "key_update": "Update Key",
+    "key_saved": "API Key saved",
+    "key_deleted": "API Key deleted",
+    "provider_switched": "Switched to {{provider}}",
+    "back_to_ollama": "Switch back to Ollama"
   },
   "errors": {
     "ollama_unavailable": "Cannot connect to Ollama. Make sure it's running on port 11434.",

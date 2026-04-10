@@ -1,6 +1,6 @@
 [package]
 name = "another-me"
-version = "0.1.0"
+version = "1.0.0"
 description = "Another Me — 本地化人生决策推演引擎"
 authors = ["另一个我 contributors"]
 edition = "2021"
@@ -44,10 +44,16 @@ anyhow = "1"
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+dirs = "6"
 
 # Time & IDs
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4", "serde"] }
+
+# Encryption (API Key storage)
+aes-gcm = "0.10"
+base64 = "0.22"
 
 [features]
 # this feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
