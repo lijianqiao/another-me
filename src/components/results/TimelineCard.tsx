@@ -1,9 +1,4 @@
-/**
- * 时间线卡片
- * 展示 narrative + key_events + 情绪维度 + 类型标签
- */
 import { useTranslation } from "react-i18next";
-
 import type { Timeline, TimelineType } from "../../types";
 import { splitNarrativeParagraphs } from "../../utils/narrativeFormat";
 
@@ -14,101 +9,107 @@ interface Props {
 
 const EMOTION_ICONS: Record<string, string> = {
   positive: "🟢",
-  neutral: "🔵",
+  neutral: "⚪",
   negative: "🔴",
 };
 
 const TYPE_CONFIG: Record<TimelineType, { label_key: string; cls: string }> = {
-  reality: { label_key: "results.type_reality", cls: "timeline-card__type--reality" },
-  parallel: { label_key: "results.type_parallel", cls: "timeline-card__type--parallel" },
-  extreme: { label_key: "results.type_extreme", cls: "timeline-card__type--extreme" },
+  reality: { label_key: "results.type_reality", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" },
+  parallel: { label_key: "results.type_parallel", cls: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20" },
+  extreme: { label_key: "results.type_extreme", cls: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20" },
 };
 
 export default function TimelineCard({ timeline, index }: Props) {
   const { t } = useTranslation();
-  const { narrative, key_events, emotion, black_swan_event, timeline_type } =
-    timeline;
+  const { narrative, key_events, emotion, black_swan_event, timeline_type } = timeline;
   const typeInfo = TYPE_CONFIG[timeline_type] ?? TYPE_CONFIG.reality;
   const paragraphs = splitNarrativeParagraphs(narrative);
 
   return (
-    <div className="timeline-card">
-      <div className="timeline-card__header">
-        <span className="timeline-card__badge">
-          {t("results.timeline")} {index + 1}
-        </span>
-        <span className={`timeline-card__type ${typeInfo.cls}`}>
-          {t(typeInfo.label_key)}
-        </span>
+    <div className="bg-card border border-border shadow-sm rounded-xl p-5 mb-6 flex flex-col gap-5 text-card-foreground transition-shadow hover:shadow-md">
+      <div className="flex items-center justify-between pb-3 border-b border-border/40">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold bg-muted py-1 px-3 rounded-full text-foreground shadow-sm">
+            {t("results.timeline")} {index + 1}
+          </span>
+          <span className={`text-xs font-medium py-1 px-3 rounded-full ${typeInfo.cls}`}>
+            {t(typeInfo.label_key)}
+          </span>
+        </div>
         {black_swan_event && (
-          <span className="timeline-card__badge timeline-card__badge--swan">
+          <span className="text-xs font-semibold py-1 px-3 rounded-full text-zinc-800 bg-zinc-100 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 shadow-sm flex items-center gap-1">
             🦢 {t("results.black_swan_label")}
           </span>
         )}
       </div>
 
-      <div className="timeline-card__narrative">
+      <div className="text-sm md:text-base leading-relaxed text-foreground/80 space-y-3 whitespace-pre-wrap font-serif">
         {paragraphs.map((p, i) => (
-          <p key={i} className="timeline-card__narrative-p">
+          <p key={i} className="text-justify indent-8 tracking-wide">
             {p}
           </p>
         ))}
       </div>
 
-      {key_events.length > 0 && (
-        <div className="timeline-card__events">
-          <h4 className="timeline-card__events-title">{t("results.key_events")}</h4>
-          <ul className="timeline-card__events-list">
+      {key_events && key_events.length > 0 && (
+        <div className="mt-2 bg-muted/30 p-4 rounded-lg border border-border/40">
+          <h4 className="text-sm font-semibold mb-3 text-foreground tracking-wide">{t("results.key_events")}</h4>
+          <ul className="flex flex-col gap-3">
             {key_events.map((evt, i) => (
-              <li key={i} className="timeline-card__event">
-                <span className="timeline-card__event-year">{evt.year}</span>
-                <span className="timeline-card__event-icon">
-                  {EMOTION_ICONS[evt.emotion] ?? "⚪"}
+              <li key={i} className="text-sm flex items-start gap-4 p-2 bg-background rounded border border-border/30 shadow-sm">
+                <span className="font-mono font-medium text-muted-foreground w-12 pt-[2px] tabular-nums shrink-0">{evt.year}</span>
+                <span className="text-sm flex items-center justify-center shrink-0 pt-[2px]">
+                  {EMOTION_ICONS[evt.emotion] ?? "🔹"}
                 </span>
-                <span className="timeline-card__event-text">{evt.event}</span>
+                <span className="text-foreground leading-snug flex-1">{evt.event}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      <div className="timeline-card__emotions">
-        <h4 className="timeline-card__events-title">{t("results.emotion_section")}</h4>
-        <div className="emotion-bars">
-          <EmotionBar
-            label={t("results.emotion_energy")}
-            value={emotion.energy}
-            color="#10b981"
-          />
-          <EmotionBar
-            label={t("results.emotion_satisfaction_dim")}
-            value={emotion.satisfaction}
-            color="#3b82f6"
-          />
-          <EmotionBar
-            label={t("results.emotion_regret")}
-            value={emotion.regret}
-            color="#f59e0b"
-            inverted
-          />
-          <EmotionBar
-            label={t("results.emotion_hope")}
-            value={emotion.hope}
-            color="#8b5cf6"
-          />
-          <EmotionBar
-            label={t("results.emotion_loneliness")}
-            value={emotion.loneliness}
-            color="#ef4444"
-            inverted
-          />
+      {emotion && (
+        <div className="mt-2">
+          <h4 className="text-sm font-semibold mb-4 text-foreground tracking-wide px-2">{t("results.emotion_section")}</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 px-2">
+            <EmotionBar
+              label={t("results.emotion_energy")}
+              value={emotion.energy}
+              color="#10b981"
+            />
+            <EmotionBar
+              label={t("results.emotion_satisfaction_dim")}
+              value={emotion.satisfaction}
+              color="#3b82f6"
+            />
+            <EmotionBar
+              label={t("results.emotion_regret")}
+              value={emotion.regret}
+              color="#f59e0b"
+              inverted
+            />
+            <EmotionBar
+              label={t("results.emotion_hope")}
+              value={emotion.hope}
+              color="#8b5cf6"
+            />
+            <EmotionBar
+              label={t("results.emotion_loneliness")}
+              value={emotion.loneliness}
+              color="#ef4444"
+              inverted
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {black_swan_event && (
-        <div className="timeline-card__swan">
-          <strong>{t("results.black_swan_event_prefix")}</strong>
-          {black_swan_event}
+        <div className="mt-4 p-4 rounded-lg bg-zinc-900 text-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-700 dark:border-zinc-300 shadow-md text-sm leading-relaxed flex gap-3">
+          <span className="text-lg">🦢</span>
+          <div>
+            <strong className="block mb-1 font-semibold">{t("results.black_swan_event_prefix")}</strong>
+            <span className="opacity-90">{black_swan_event}</span>
+          </div>
         </div>
       )}
     </div>
@@ -127,19 +128,21 @@ function EmotionBar({
   inverted?: boolean;
 }) {
   return (
-    <div className="emotion-bar">
-      <span className="emotion-bar__label">{label}</span>
-      <div className="emotion-bar__track">
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium text-muted-foreground flex justify-between">
+        <span>{label}</span>
+        <span className="font-mono">{Math.round(value)}</span>
+      </span>
+      <div className="h-2 w-full bg-muted rounded-full overflow-hidden flex">
         <div
-          className="emotion-bar__fill"
+          className="h-full rounded-full transition-all duration-700 ease-out"
           style={{
             width: `${Math.min(100, Math.max(0, value))}%`,
             background: color,
-            opacity: inverted ? 0.6 : 1,
+            opacity: inverted ? 0.7 : 1,
           }}
         />
       </div>
-      <span className="emotion-bar__value">{Math.round(value)}</span>
     </div>
   );
 }

@@ -24,16 +24,16 @@ export default function LifeMap({
 
   if (nodes.length === 0) {
     return (
-      <div className="lifemap-empty">
-        <p>{t("lifemap.empty")}</p>
+      <div className="flex items-center justify-center py-12 text-center">
+        <p className="text-sm text-muted-foreground">{t("lifemap.empty")}</p>
       </div>
     );
   }
 
   return (
-    <div className="lifemap">
-      <div className="lifemap__line" />
-      {nodes.map((node, idx) => {
+    <div className="relative pl-0">
+      <div className="absolute left-[9px] top-0 bottom-0 w-0.5 bg-border -z-10" />
+      {nodes.map((node) => {
         const isAnchored = node.decision_id === anchoredDecisionId;
         const date = new Date(node.node_date);
         const dateStr = date.toLocaleDateString(undefined, {
@@ -45,35 +45,47 @@ export default function LifeMap({
         return (
           <div
             key={node.id}
-            className={`lifemap__node ${isAnchored ? "lifemap__node--anchored" : ""}`}
+            className={`flex gap-4 pt-4 pb-6 relative group ${isAnchored ? "is-anchored" : ""}`}
           >
-            <div className="lifemap__dot-col">
+            <div className="flex flex-col items-center w-5 shrink-0 z-10 pt-2">
               <span
-                className={`lifemap__dot ${isAnchored ? "lifemap__dot--anchored" : ""}`}
+                className={`w-3.5 h-3.5 rounded-full border-[3px] border-background ${
+                  isAnchored
+                    ? "bg-primary ring-2 ring-primary"
+                    : "bg-muted-foreground ring-2 ring-muted-foreground"
+                }`}
               />
-              {idx < nodes.length - 1 && <span className="lifemap__connector" />}
             </div>
 
-            <div className="lifemap__content">
-              <div className="lifemap__meta">
-                <time className="lifemap__date">{dateStr}</time>
+            <div className="flex-1 pb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <time className="text-xs text-muted-foreground">{dateStr}</time>
                 {isAnchored && (
-                  <span className="lifemap__anchor-badge">
-                    ⚓ {t("lifemap.anchored")}
+                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">
+                    ? {t("lifemap.anchored")}
                   </span>
                 )}
               </div>
 
               <button
-                className="lifemap__card"
+                className={`block w-full text-left p-4 bg-card border rounded-xl cursor-pointer transition-colors hover:border-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  isAnchored ? "border-primary bg-primary/5" : "border-border"
+                }`}
                 onClick={() => onSelect(node.decision_id)}
               >
-                <h4 className="lifemap__label">{node.node_label}</h4>
-                <p className="lifemap__outcome">{node.outcome_summary}</p>
+                <h4 className="m-0 mb-1 text-sm font-semibold text-card-foreground">
+                  {node.node_label}
+                </h4>
+                <p className="m-0 text-sm text-muted-foreground leading-relaxed">
+                  {node.outcome_summary}
+                </p>
                 {node.personality_changes.length > 0 && (
-                  <div className="lifemap__changes">
+                  <div className="flex flex-wrap gap-1.5 mt-3">
                     {node.personality_changes.map((c, i) => (
-                      <span key={i} className="lifemap__change-tag">
+                      <span
+                        key={i}
+                        className="text-[11px] px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground"
+                      >
                         {c}
                       </span>
                     ))}
@@ -82,7 +94,7 @@ export default function LifeMap({
               </button>
 
               <button
-                className="lifemap__anchor-btn"
+                className="mt-2 px-3 py-1 text-xs border border-border rounded-md bg-background text-muted-foreground cursor-pointer transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleAnchor(node.decision_id, isAnchored);

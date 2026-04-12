@@ -63,16 +63,18 @@ export default function HistoryPage() {
   };
 
   return (
-    <section className="history-page">
-      <div className="history-page__header">
-        <h2>{t("history.title")}</h2>
-        <span className="history-page__count">
-          {!loading && t("history.count", { n: items.length })}
-        </span>
+    <section className="flex flex-col gap-6 max-w-3xl">
+      <div className="flex flex-row items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold tracking-tight">{t("history.title")}</h2>
+        {!loading && (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {t("history.count", { n: items.length })}
+          </span>
+        )}
       </div>
 
       {loading ? (
-        <p className="history-page__loading">{t("common.loading")}</p>
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : (
         <HistoryList items={items} onSelect={handleSelect} />
       )}

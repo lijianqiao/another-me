@@ -182,9 +182,9 @@ export default function ModelManagerPage() {
   };
 
   return (
-    <section className="model-manager-page">
-      <h2>{t("models.title")}</h2>
-      <p className="model-manager-page__desc">{t("models.subtitle")}</p>
+    <section className="space-y-8 p-6 max-w-3xl mx-auto w-full">
+      <h2 className="text-2xl font-bold tracking-tight">{t("models.title")}</h2>
+      <p className="text-muted-foreground mb-6">{t("models.subtitle")}</p>
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -197,11 +197,11 @@ export default function ModelManagerPage() {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      <div className="model-manager__download">
-        <h3>{t("models.download_title")}</h3>
-        <div className="model-manager__download-row">
+      <div className="bg-card border border-border p-6 rounded-lg space-y-4 mb-8">
+        <h3 className="text-lg font-semibold tracking-tight">{t("models.download_title")}</h3>
+        <div className="flex gap-3">
           <input
-            className="settings-input"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             type="text"
             placeholder={t("models.download_placeholder")}
             value={newModelId}
@@ -209,7 +209,7 @@ export default function ModelManagerPage() {
             disabled={downloading}
           />
           <button
-            className="btn btn--primary btn--sm"
+            className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={handleDownload}
             disabled={downloading || !newModelId.trim()}
           >
@@ -218,34 +218,34 @@ export default function ModelManagerPage() {
         </div>
       </div>
 
-      <div className="model-manager__list">
+      <div className="space-y-4">
         {loading && <p>{t("common.loading")}</p>}
         {!loading && models.length === 0 && (
-          <p className="model-manager__empty">{t("models.empty")}</p>
+          <p className="text-center text-muted-foreground py-8">{t("models.empty")}</p>
         )}
         {models.map((m) => (
           <div
             key={m.name}
-            className={`model-card ${m.is_active ? "model-card--active" : ""}`}
+            className={`g-card border p-5 rounded-lg flex flex-col gap-4 sm:flex-row sm:items-center justify-between transition-colors ${m.is_active ? "model-card--active" : ""}`}
           >
-            <div className="model-card__info">
-              <span className="model-card__name">{m.name}</span>
-              <span className="model-card__size">{m.size}</span>
+            <div className="flex items-center gap-3">
+              <span className="font-medium">{m.name}</span>
+              <span className="text-sm text-muted-foreground">{m.size}</span>
               {m.is_active && (
-                <span className="model-card__badge">{t("models.active")}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 text-primary uppercase font-bold tracking-wider">{t("models.active")}</span>
               )}
             </div>
-            <div className="model-card__actions">
+            <div className="flex flex-wrap items-center gap-2">
               {!m.is_active && (
                 <button
-                  className="btn btn--sm"
+                  className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
                   onClick={() => handleSwitch(m.name)}
                 >
                   {t("models.use")}
                 </button>
               )}
               <button
-                className="btn btn--sm btn--danger"
+                className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors text-destructive hover:bg-destructive/10 border border-destructive/20"
                 onClick={() => setDeleteTarget(m.name)}
               >
                 {t("models.delete")}
@@ -255,11 +255,11 @@ export default function ModelManagerPage() {
         ))}
       </div>
 
-      <div className="settings-section model-manager__cloud">
-        <h3 className="settings-section__title">{t("settings.cloud_title")}</h3>
-        <p className="settings-section__desc">{t("models.cloud_desc")}</p>
+      <div className="space-y-6 pt-8 border-t border-border mt-8">
+        <h3 className="text-xl font-semibold tracking-tight">{t("settings.cloud_title")}</h3>
+        <p className="text-muted-foreground text-sm">{t("models.cloud_desc")}</p>
 
-        <div className="cloud-providers">
+        <div className="grid gap-4 mt-4">
           {CLOUD_PROVIDERS.map((cp) => {
             const status = cloudStatuses.find((k) => k.provider === cp.id);
             const hasKey = status?.has_key ?? false;
@@ -270,11 +270,11 @@ export default function ModelManagerPage() {
             };
 
             return (
-              <div key={cp.id} className="cloud-provider-card">
-                <div className="cloud-provider-card__header">
-                  <span className="cloud-provider-card__name">{cp.label}</span>
+              <div key={cp.id} className="bg-card border border-border p-5 rounded-lg space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-semibold text-lg">{cp.label}</span>
                   <span
-                    className={`cloud-provider-card__badge ${hasKey ? "cloud-provider-card__badge--ok" : ""
+                    className={`	ext-[10px] px-2 py-0.5 rounded-full font-semibold ${hasKey ? "cloud-provider-card__badge--ok" : ""
                       }`}
                   >
                     {hasKey
@@ -283,10 +283,10 @@ export default function ModelManagerPage() {
                   </span>
                 </div>
 
-                <label className="cloud-provider-card__field">
+                <label className="space-y-1.5 flex flex-col text-sm font-medium">
                   <span>{t("models.base_url")}</span>
                   <input
-                    className="settings-input"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     type="url"
                     placeholder={cp.defaultBase}
                     value={inp.baseUrl}
@@ -294,10 +294,10 @@ export default function ModelManagerPage() {
                   />
                 </label>
 
-                <label className="cloud-provider-card__field">
+                <label className="space-y-1.5 flex flex-col text-sm font-medium">
                   <span>{t("models.cloud_model_id")}</span>
                   <input
-                    className="settings-input"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     type="text"
                     placeholder={cp.defaultModel}
                     value={inp.model}
@@ -306,17 +306,17 @@ export default function ModelManagerPage() {
                 </label>
 
                 {isEditing ? (
-                  <div className="cloud-provider-card__form">
+                  <div className="space-y-4 mt-4 pt-4 border-t border-border">
                     <input
                       type="password"
-                      className="settings-input"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder={t("models.api_key_placeholder")}
                       value={keyInput}
                       onChange={(e) => setKeyInput(e.target.value)}
                     />
-                    <div className="cloud-provider-card__actions">
+                    <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
                       <button
-                        className="btn btn--sm btn--primary"
+                        className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
                         disabled={!keyInput.trim()}
                         onClick={async () => {
                           if (!inp.baseUrl.trim()) {
@@ -344,7 +344,7 @@ export default function ModelManagerPage() {
                         {t("common.save")}
                       </button>
                       <button
-                        className="btn btn--sm"
+                        className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
                         onClick={() => {
                           setEditingProvider(null);
                           setKeyInput("");
@@ -355,9 +355,9 @@ export default function ModelManagerPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="cloud-provider-card__actions">
+                  <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
                     <button
-                      className="btn btn--sm"
+                      className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
                       onClick={() => {
                         setEditingProvider(cp.id);
                         setKeyInput("");
@@ -370,7 +370,7 @@ export default function ModelManagerPage() {
                     {hasKey && (
                       <>
                         <button
-                          className="btn btn--sm"
+                          className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
                           onClick={async () => {
                             try {
                               await saveCloudProvider({
@@ -390,7 +390,7 @@ export default function ModelManagerPage() {
                           {t("models.save_base_url")}
                         </button>
                         <button
-                          className="btn btn--sm btn--danger"
+                          className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors text-destructive hover:bg-destructive/10 border border-destructive/20"
                           onClick={async () => {
                             try {
                               await deleteApiKey(cp.id);
@@ -407,7 +407,7 @@ export default function ModelManagerPage() {
                           {t("models.delete")}
                         </button>
                         <button
-                          className="btn btn--sm btn--primary"
+                          className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
                           onClick={async () => {
                             if (!inp.baseUrl.trim()) {
                               pushToast("warning", t("models.base_url_required"));
@@ -449,7 +449,7 @@ export default function ModelManagerPage() {
 
         {activeProvider !== "ollama" && (
           <button
-            className="btn btn--sm"
+            className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
             onClick={async () => {
               try {
                 await switchProvider({

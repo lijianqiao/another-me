@@ -1,6 +1,7 @@
+
 /**
- * Onboarding — 4 步引导流程
- * 欢迎 → 基础信息 → 习惯 → 性格
+ * Onboarding - 4 步引导流程
+ *  欢迎 -> 基础信息 -> 习惯 -> 性格
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -79,154 +80,173 @@ export default function OnboardingPage() {
     }
   };
 
-  const req = t("onboarding.required_mark");
+  const req = <span className="text-red-500 ml-1">*</span>;
+
+  const InputSection = ({ label, required, children }: any) => (
+    <div className="flex flex-col gap-1.5 min-w-[320px] max-w-full">
+      <label className="text-sm font-medium text-foreground">
+        {label}
+        {required && req}
+      </label>
+      {children}
+    </div>
+  );
 
   return (
-    <section className="onboarding">
-      <div className="onboarding__progress">
+    <section className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] w-full py-10 px-4 max-w-2xl mx-auto">
+      <div className="flex gap-2.5 mb-8 w-full max-w-md justify-center">
         {Array.from({ length: TOTAL_STEPS }, (_, i) => (
           <div
             key={i}
-            className={`onboarding__dot ${i <= step ? "onboarding__dot--active" : ""}`}
+            className={`h-2 flex-1 max-w-[60px] rounded-full transition-colors duration-300 ${
+              i <= step ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.3)]" : "bg-muted"
+            }`}
           />
         ))}
       </div>
 
-      <div className="onboarding__card">
-        {step === 0 && (
-          <div className="onboarding__step">
-            <h2 className="onboarding__title">👋 {t("onboarding.title")}</h2>
-            <p className="onboarding__desc">
-              {t("onboarding.welcome_desc_1")}<br />
-              {t("onboarding.welcome_desc_2")}
-            </p>
-            <p className="onboarding__desc onboarding__desc--muted">
-              {t("onboarding.welcome_note")}
-            </p>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="onboarding__step">
-            <h2 className="onboarding__title">{t("onboarding.section_basic")}</h2>
-            <div className="stack">
-              <label>
-                {t("onboarding.field_occupation")}{req}
-                <input
-                  value={occupation}
-                  onChange={(e) => setOccupation(e.target.value)}
-                  placeholder={t("onboarding.field_occupation_ph")}
-                />
-              </label>
-              <label>
-                {t("onboarding.field_relationship")}{req}
-                <input
-                  value={relationship}
-                  onChange={(e) => setRelationship(e.target.value)}
-                  placeholder={t("onboarding.field_relationship_ph")}
-                />
-              </label>
-              <label>
-                {t("onboarding.field_financial")}
-                <select
-                  value={financial}
-                  onChange={(e) => setFinancial(e.target.value as FinancialStatus)}
-                >
-                  <option value="broke">{t("onboarding.financial_broke")}</option>
-                  <option value="saving">{t("onboarding.financial_saving")}</option>
-                  <option value="stable">{t("onboarding.financial_stable")}</option>
-                  <option value="debt">{t("onboarding.financial_debt")}</option>
-                </select>
-              </label>
-              <label>
-                {t("onboarding.field_location")}
-                <input
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder={t("onboarding.field_location_ph")}
-                />
-              </label>
+      <div className="bg-card w-full max-w-md p-8 rounded-2xl shadow-sm border border-border flex flex-col items-center text-center transition-all duration-300">
+        <div className="w-full flex-1 min-h-[50vh]">
+          {step === 0 && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center pt-8">
+              <h2 className="text-2xl font-bold mb-4 tracking-tight">👋 {t("onboarding.title")}</h2>
+              <p className="text-muted-foreground text-[15px] leading-relaxed mb-6">
+                {t("onboarding.welcome_desc_1")}<br />
+                {t("onboarding.welcome_desc_2")}
+              </p>
+              <p className="text-xs text-muted-foreground/70 bg-secondary/50 p-3 rounded-lg border border-border">
+                {t("onboarding.welcome_note")}
+              </p>
             </div>
-          </div>
-        )}
+          )}
 
-        {step === 2 && (
-          <div className="onboarding__step">
-            <h2 className="onboarding__title">{t("onboarding.section_habits")}</h2>
-            <div className="stack">
-              <label>
-                {t("onboarding.field_habits")}{req}
-                <input
-                  value={habits}
-                  onChange={(e) => setHabits(e.target.value)}
-                  placeholder={t("onboarding.field_habits_ph")}
-                />
-              </label>
-              <label>
-                {t("onboarding.field_social")}
-                <select
-                  value={social}
-                  onChange={(e) => setSocial(e.target.value as SocialTendency)}
-                >
-                  <option value="introvert">{t("onboarding.social_introvert")}</option>
-                  <option value="neutral">{t("onboarding.social_neutral")}</option>
-                  <option value="extrovert">{t("onboarding.social_extrovert")}</option>
-                </select>
-              </label>
-              <label>
-                {t("onboarding.field_health")}
-                <input
-                  value={healthStatus}
-                  onChange={(e) => setHealthStatus(e.target.value)}
-                  placeholder={t("onboarding.field_health_ph")}
-                />
-              </label>
+          {step === 1 && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 w-full text-left">
+              <h2 className="text-xl font-semibold mb-6 text-center">{t("onboarding.section_basic")}</h2>
+              <div className="flex flex-col gap-5 w-full">
+                <InputSection label={t("onboarding.field_occupation")} required={true}>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={occupation}
+                    onChange={(e) => setOccupation(e.target.value)}
+                    placeholder={t("onboarding.field_occupation_ph")}
+                  />
+                </InputSection>
+                <InputSection label={t("onboarding.field_relationship")} required={true}>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={relationship}
+                    onChange={(e) => setRelationship(e.target.value)}
+                    placeholder={t("onboarding.field_relationship_ph")}
+                  />
+                </InputSection>
+                <InputSection label={t("onboarding.field_financial")}>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={financial}
+                    onChange={(e) => setFinancial(e.target.value as FinancialStatus)}
+                  >
+                    <option value="broke">{t("onboarding.financial_broke")}</option>
+                    <option value="saving">{t("onboarding.financial_saving")}</option>
+                    <option value="stable">{t("onboarding.financial_stable")}</option>
+                    <option value="debt">{t("onboarding.financial_debt")}</option>
+                  </select>
+                </InputSection>
+                <InputSection label={t("onboarding.field_location")}>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder={t("onboarding.field_location_ph")}
+                  />
+                </InputSection>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {step === 3 && (
-          <div className="onboarding__step">
-            <h2 className="onboarding__title">{t("onboarding.section_personality")}</h2>
-            <div className="stack">
-              <label>
-                {t("onboarding.field_tags")}{req}
-                <input
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  placeholder={t("onboarding.field_tags_ph")}
-                />
-              </label>
-              <label>
-                {t("onboarding.field_fears")}
-                <input
-                  value={coreFears}
-                  onChange={(e) => setCoreFears(e.target.value)}
-                  placeholder={t("onboarding.field_fears_ph")}
-                />
-              </label>
-              <label>
-                {t("onboarding.field_dreams")}
-                <input
-                  value={dreams}
-                  onChange={(e) => setDreams(e.target.value)}
-                  placeholder={t("onboarding.field_dreams_ph")}
-                />
-              </label>
+          {step === 2 && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 w-full text-left">
+              <h2 className="text-xl font-semibold mb-6 text-center">{t("onboarding.section_habits")}</h2>
+              <div className="flex flex-col gap-5 w-full">
+                <InputSection label={t("onboarding.field_habits")} required={true}>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={habits}
+                    onChange={(e) => setHabits(e.target.value)}
+                    placeholder={t("onboarding.field_habits_ph")}
+                  />
+                </InputSection>
+                <InputSection label={t("onboarding.field_social")}>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={social}
+                    onChange={(e) => setSocial(e.target.value as SocialTendency)}
+                  >
+                    <option value="introvert">{t("onboarding.social_introvert")}</option>
+                    <option value="neutral">{t("onboarding.social_neutral")}</option>
+                    <option value="extrovert">{t("onboarding.social_extrovert")}</option>
+                  </select>
+                </InputSection>
+                <InputSection label={t("onboarding.field_health")}>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={healthStatus}
+                    onChange={(e) => setHealthStatus(e.target.value)}
+                    placeholder={t("onboarding.field_health_ph")}
+                  />
+                </InputSection>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="onboarding__actions">
-          {step > 0 && (
-            <button className="btn" onClick={prev}>
+          {step === 3 && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 w-full text-left">
+              <h2 className="text-xl font-semibold mb-6 text-center">{t("onboarding.section_personality")}</h2>
+              <div className="flex flex-col gap-5 w-full">
+                <InputSection label={t("onboarding.field_tags")} required={true}>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    placeholder={t("onboarding.field_tags_ph")}
+                  />
+                </InputSection>
+                <InputSection label={t("onboarding.field_fears")}>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={coreFears}
+                    onChange={(e) => setCoreFears(e.target.value)}
+                    placeholder={t("onboarding.field_fears_ph")}
+                  />
+                </InputSection>
+                <InputSection label={t("onboarding.field_dreams")}>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    value={dreams}
+                    onChange={(e) => setDreams(e.target.value)}
+                    placeholder={t("onboarding.field_dreams_ph")}
+                  />
+                </InputSection>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-between items-center w-full mt-8 pt-4 border-t border-border">
+          {step > 0 ? (
+            <button
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4 shadow-sm"
+              onClick={prev}
+            >
               {t("onboarding.previous")}
             </button>
+          ) : (
+            <div />
           )}
-          <div style={{ flex: 1 }} />
+
           {step < TOTAL_STEPS - 1 ? (
             <button
-              className="btn btn--primary"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-8 shadow-sm"
               onClick={next}
               disabled={!canNext()}
             >
@@ -234,11 +254,21 @@ export default function OnboardingPage() {
             </button>
           ) : (
             <button
-              className="btn btn--primary"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-8 shadow-sm"
               onClick={onSubmit}
               disabled={!canNext() || busy}
             >
-              {busy ? t("common.loading") : t("onboarding.finish")}
+              {busy ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {t("common.loading")}
+                </>
+              ) : (
+                t("onboarding.finish")
+              )}
             </button>
           )}
         </div>
@@ -249,7 +279,8 @@ export default function OnboardingPage() {
 
 function split(raw: string): string[] {
   return raw
-    .split(/[,，]/)
+    .split(/[,，、]/)
     .map((s) => s.trim())
     .filter(Boolean);
 }
+

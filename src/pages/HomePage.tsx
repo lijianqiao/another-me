@@ -18,16 +18,12 @@ export default function HomePage() {
     }
   }, [status, profile, navigate]);
 
-  if (status === "loading" || status === "idle") {
-    return <p>{t("common.loading")}</p>;
-  }
-
   return (
-    <section className="home-page">
-      <h2>{t("home.welcome")}</h2>
-      <p className="home-page__tagline text-muted-foreground mb-6">{t("app.tagline")}</p>
+    <section className="space-y-6">
+      <h2 className="text-2xl font-bold tracking-tight">{t("home.welcome")}</h2>
+      <p className="text-muted-foreground">{t("app.tagline")}</p>
       <EvolutionBadge />
-      <div className="home-page__actions flex items-center gap-3 mt-6">
+      <div className="flex items-center gap-3 pt-2">
         <Button asChild>
           <Link to="/simulate">{t("home.start_simulation")}</Link>
         </Button>

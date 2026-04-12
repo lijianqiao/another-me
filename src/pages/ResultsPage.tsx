@@ -1,10 +1,3 @@
-/**
- * 推演结果页
- *
- * Sprint 6：决策树 + 走势图 + 标签切换
- * Sprint 7：锚定时间线按钮
- * Sprint 8：反馈按钮 + 画像修正
- */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -37,7 +30,7 @@ export default function ResultsPage() {
   const [darkConfirmed, setDarkConfirmed] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("timelines");
   const [isAnchored, setIsAnchored] = useState(false);
-  const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false);
+  const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false);      
   const [correctionFeedbackId, setCorrectionFeedbackId] = useState("");
   const [corrections, setCorrections] = useState<ProfileCorrectionSuggestion[]>([]);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -56,10 +49,10 @@ export default function ResultsPage() {
 
   if (!result) {
     return (
-      <section className="results-page">
-        <p>{t("results.no_result")}</p>
+      <section className="flex flex-col items-center justify-center h-full gap-4 mt-20 fade-in animate-in">
+        <p className="text-muted-foreground">{t("results.no_result")}</p>
         <button
-          className="btn btn--primary"
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2 transition-colors"
           onClick={() => navigate("/simulate")}
         >
           {t("results.go_simulate")}
@@ -79,7 +72,7 @@ export default function ResultsPage() {
 
   const showDarkDialog = dark_content_warning && !darkConfirmed;
   const hasTree = !!decision_tree;
-  const hasChart = timelines.some((tl) => tl.dimension_scores.length > 0);
+  const hasChart = timelines.some((tl) => tl.dimension_scores.length > 0);      
 
   const handleToggleAnchor = async () => {
     try {
@@ -98,7 +91,7 @@ export default function ResultsPage() {
   };
 
   return (
-    <section className="results-page">
+    <section className="w-full max-w-5xl mx-auto p-4 md:p-6 lg:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <ConfirmDialog
         open={showDarkDialog}
         kind="warning"
@@ -113,34 +106,36 @@ export default function ResultsPage() {
         }}
       />
 
-      <div className="results-page__header">
-        <h2>{t("results.title")}</h2>
-        <div className="results-page__actions">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-4 border-b border-border pb-4">
+        <h2 className="text-3xl font-bold tracking-tight text-foreground font-serif">{t("results.title")}</h2>
+        <div className="flex flex-wrap items-center justify-start gap-3 w-full md:w-auto">
           <button
-            className={`btn btn--sm ${isAnchored ? "btn--anchor-active" : "btn--anchor"}`}
+            className={`inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors border bg-background shadow-sm h-8 px-3 ${isAnchored ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20" : "border-input hover:bg-accent hover:text-accent-foreground"}`}
             onClick={handleToggleAnchor}
           >
             {isAnchored
-              ? `⚓ ${t("results.anchored")}`
-              : `⚓ ${t("results.set_anchor")}`}
+              ? `📌 ${t("results.anchored")}`
+              : `📌 ${t("results.set_anchor")}`}
           </button>
-          <div className="export-dropdown">
+          
+          <div className="relative group inline-block">
             <button
-              className="btn btn--sm"
+              className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3"
               onClick={() => setShowExportMenu((p) => !p)}
             >
               {t("results.export")}
             </button>
             {showExportMenu && (
-              <div className="export-dropdown__menu">
+              <div className="absolute right-0 top-full mt-2 w-32 rounded-md border border-border bg-popover text-popover-foreground shadow-lg shadow-black/5 outline-none z-50 flex flex-col p-1 animate-in fade-in zoom-in-95">
                 <button
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
                   onClick={async () => {
                     setShowExportMenu(false);
                     try {
-                      const json = await exportDecisionJson(decision_id);
+                      const json = await exportDecisionJson(decision_id);       
                       downloadAsFile(json, `another-me-${decision_id.slice(0, 8)}.json`);
                       const dir = await downloadDir();
-                      pushToast("info", t("results.export_done_downloads"), {
+                      pushToast("info", t("results.export_done_downloads"), {   
                         label: t("results.open_downloads_folder"),
                         onClick: () => {
                           void openPathInExplorer(dir);
@@ -158,15 +153,16 @@ export default function ResultsPage() {
                 </button>
                 {hasTree && (
                   <button
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
                     onClick={async () => {
                       setShowExportMenu(false);
                       try {
                         await exportElementAsPng(
                           ".results-export-snapshot .decision-tree",
-                          `decision-tree-${decision_id.slice(0, 8)}.png`,
+                          `decision-tree-${decision_id.slice(0, 8)}.png`,       
                         );
                         const dir = await downloadDir();
-                        pushToast("info", t("results.export_done_downloads"), {
+                        pushToast("info", t("results.export_done_downloads"), { 
                           label: t("results.open_downloads_folder"),
                           onClick: () => {
                             void openPathInExplorer(dir);
@@ -186,8 +182,9 @@ export default function ResultsPage() {
               </div>
             )}
           </div>
+          
           <button
-            className="btn"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 transition-colors"
             onClick={() => {
               reset();
               navigate("/simulate");
@@ -199,28 +196,28 @@ export default function ResultsPage() {
       </div>
 
       {dark_content_warning && darkConfirmed && (
-        <div className="results-page__warning">
+        <div className="p-4 rounded-lg border text-sm font-medium flex items-center gap-2 border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-500">
           ⚠️ {t("results.dark_warning")}
         </div>
       )}
 
       {emotional_recovery_needed && (
-        <div className="results-page__recovery">
-          💙 {t("results.recovery_tip")}
+        <div className="p-4 rounded-lg border text-sm font-medium flex items-center gap-2 border-blue-500/50 bg-blue-500/10 text-blue-600 dark:text-blue-400">
+          💖 {t("results.recovery_tip")}
         </div>
       )}
 
       {(hasTree || hasChart) && (
-        <div className="results-page__tabs">
+        <div className="flex flex-wrap items-center gap-2 p-1 bg-muted/50 rounded-lg w-fit">
           <button
-            className={`results-page__tab ${activeTab === "timelines" ? "results-page__tab--active" : ""}`}
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none text-muted-foreground hover:bg-background/50 hover:text-foreground ${activeTab === "timelines" ? "bg-background text-foreground shadow-sm hover:bg-background" : ""}`}
             onClick={() => setActiveTab("timelines")}
           >
             {t("results.tab_timelines")}
           </button>
           {hasTree && (
             <button
-              className={`results-page__tab ${activeTab === "tree" ? "results-page__tab--active" : ""}`}
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none text-muted-foreground hover:bg-background/50 hover:text-foreground ${activeTab === "tree" ? "bg-background text-foreground shadow-sm hover:bg-background" : ""}`}
               onClick={() => setActiveTab("tree")}
             >
               {t("results.tab_tree")}
@@ -228,7 +225,7 @@ export default function ResultsPage() {
           )}
           {hasChart && (
             <button
-              className={`results-page__tab ${activeTab === "chart" ? "results-page__tab--active" : ""}`}
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none text-muted-foreground hover:bg-background/50 hover:text-foreground ${activeTab === "chart" ? "bg-background text-foreground shadow-sm hover:bg-background" : ""}`}
               onClick={() => setActiveTab("chart")}
             >
               {t("results.tab_chart")}
@@ -236,7 +233,7 @@ export default function ResultsPage() {
           )}
           {letter && (
             <button
-              className={`results-page__tab ${activeTab === "letter" ? "results-page__tab--active" : ""}`}
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none text-muted-foreground hover:bg-background/50 hover:text-foreground ${activeTab === "letter" ? "bg-background text-foreground shadow-sm hover:bg-background" : ""}`}
               onClick={() => setActiveTab("letter")}
             >
               {t("results.tab_letter")}
@@ -246,7 +243,7 @@ export default function ResultsPage() {
       )}
 
       {activeTab === "timelines" && (
-        <div className="results-page__timelines">
+        <div className="space-y-4">
           {timelines.map((tl, i) => (
             <TimelineCard key={tl.id} timeline={tl} index={i} />
           ))}
@@ -258,7 +255,7 @@ export default function ResultsPage() {
       )}
 
       {hasTree && (
-        <div className="results-export-snapshot" aria-hidden>
+        <div className="results-export-snapshot opacity-0 absolute pointer-events-none" aria-hidden>
           <DecisionTree tree={decision_tree!} />
         </div>
       )}
@@ -267,7 +264,7 @@ export default function ResultsPage() {
         <LifeChart timelines={timelines} />
       )}
 
-      {activeTab === "letter" && letter && <FutureLetter letter={letter} />}
+      {activeTab === "letter" && letter && <FutureLetter letter={letter} />}    
 
       <FeedbackButtons
         decisionId={decision_id}

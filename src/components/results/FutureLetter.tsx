@@ -28,7 +28,22 @@ const TONE_META: Record<string, { emoji: string; key: string }> = {
 
 /** Normalize literal escaped newlines from JSON (\\n) into real newlines */
 function normalizeContent(raw: string): string {
-  return raw.replace(/\\n/g, "\n");
+  let text = raw;
+  try {
+    text = text.replace(/^\s*\`\`\`json\s*\n/im, '').replace(/\n\s*\`\`\`\s*$/im, '').trim();
+    if (text.startsWith('{') && text.endsWith('}')) {
+      const parsed = JSON.parse(text);
+      const contentKeys = ['信件内容', 'content', 'letter', 'message'];
+      let foundKey = Object.keys(parsed).find(k => contentKeys.some(pk => k.includes(pk))) || Object.keys(parsed)[0];
+      if (foundKey && typeof parsed[foundKey] === 'string') {
+        text = parsed[foundKey];
+      }
+    } else if (text.startsWith('{') && text.includes('"信件内容"')) {
+      const match = text.match(/"信件内容"\s*:\s*"([\s\S]*?)"\s*\}/);
+      if (match) text = match[1];
+    }
+  } catch (e) {}
+  return text.replace(/\\n/g, '\n').trim();
 }
 
 export default function FutureLetter({ letter }: Props) {

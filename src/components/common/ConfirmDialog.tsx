@@ -29,19 +29,35 @@ export default function ConfirmDialog({
 
   if (!open) return null;
 
+  const bgClass = kind === "warning" ? "bg-destructive/10 border-destructive/30" : "bg-card border-border";
+  const titleClass = kind === "warning" ? "text-destructive" : "text-card-foreground";
+
   return (
-    <div className="confirm-dialog__overlay" onClick={onCancel}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onCancel}
+    >
       <div
-        className={`confirm-dialog confirm-dialog--${kind}`}
+        className={`rounded-lg border ${bgClass} p-6 shadow-lg max-w-sm w-full mx-4`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="confirm-dialog__title">{title}</h3>
-        <p className="confirm-dialog__message">{message}</p>
-        <div className="confirm-dialog__actions">
-          <button className="btn" onClick={onCancel}>
+        <h3 className={`text-lg font-semibold ${titleClass} mb-2`}>
+          {title}
+        </h3>
+        <p className="text-sm text-muted-foreground mb-6">
+          {message}
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button
+            className="px-4 py-2 rounded-md text-sm font-medium hover:bg-muted border border-border text-foreground transition-colors"
+            onClick={onCancel}
+          >
             {cancelText ?? t("common.cancel")}
           </button>
-          <button className="btn btn--primary" onClick={onConfirm}>
+          <button
+            className="px-4 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            onClick={onConfirm}
+          >
             {confirmText ?? t("common.confirm")}
           </button>
         </div>

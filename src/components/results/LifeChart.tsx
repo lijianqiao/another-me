@@ -7,8 +7,8 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -34,9 +34,9 @@ const DIMENSIONS: Dimension[] = [
 ];
 
 const TIMELINE_COLORS: Record<TimelineType, string> = {
-  reality: "#4f46e5",
-  parallel: "#7c3aed",
-  extreme: "#f59e0b",
+  reality: "hsl(var(--chart-1))",
+  parallel: "hsl(var(--chart-2))",
+  extreme: "hsl(var(--chart-3))",
 };
 
 const TIMELINE_DASH: Record<TimelineType, string> = {
@@ -75,67 +75,93 @@ export default function LifeChart({ timelines }: Props) {
   if (chartData.length === 0) return null;
 
   return (
-    <div className="life-chart">
-      <h3 className="life-chart__title">{t("results.life_chart_title")}</h3>
+    <div className="flex flex-col gap-6 rounded-xl border border-border/40 bg-card/40 p-6 shadow-sm backdrop-blur-md">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <h3 className="text-lg font-medium text-foreground">{t("results.life_chart_title")}</h3>
 
-      <div className="life-chart__dims">
-        {DIMENSIONS.map((dim) => (
-          <button
-            key={dim}
-            className={`life-chart__dim-btn ${dim === activeDim ? "life-chart__dim-btn--active" : ""}`}
-            onClick={() => setActiveDim(dim)}
-          >
-            {t(`results.dim_${dim}`)}
-          </button>
-        ))}
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          {DIMENSIONS.map((dim) => (
+            <button
+              key={dim}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${dim === activeDim
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                }`}
+              onClick={() => setActiveDim(dim)}
+            >
+              {t(`results.dim_${dim}`)}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="life-chart__chart">
-        <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 8, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+      <div className="h-[320px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 8, right: 0, bottom: 8, left: -24 }}>
+            <defs>
+              {timelines.map((tl) => (
+                <linearGradient key={`grad-${tl.id}`} id={`color-${tl.id}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={TIMELINE_COLORS[tl.timeline_type] ?? "#6b7280"} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={TIMELINE_COLORS[tl.timeline_type] ?? "#6b7280"} stopOpacity={0} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} vertical={false} />
             <XAxis
               dataKey="year"
-              tick={{ fontSize: 12, fill: "#64748b" }}
+              tick={{ fontSize: 12, fill: "currentColor" }}
               tickLine={false}
+              axisLine={false}
+              tickMargin={12}
+              opacity={0.6}
             />
             <YAxis
               domain={[0, 100]}
-              tick={{ fontSize: 12, fill: "#64748b" }}
+              tick={{ fontSize: 12, fill: "currentColor" }}
               tickLine={false}
-              width={36}
+              axisLine={false}
+              width={40}
+              tickMargin={12}
+              opacity={0.6}
             />
             <Tooltip
               contentStyle={{
-                fontSize: 12,
-                borderRadius: 8,
-                border: "1px solid #e2e8f0",
+                backgroundColor: "hsl(var(--popover))",
+                color: "hsl(var(--popover-foreground))",
+                borderColor: "hsl(var(--border))",
+                borderRadius: "12px",
+                fontSize: "12px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                backdropFilter: "blur(8px)"
               }}
+              itemStyle={{ color: "hsl(var(--foreground))" }}
             />
             <Legend
-              iconType="line"
-              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+              iconType="circle"
+              wrapperStyle={{ fontSize: 12, paddingTop: 16, opacity: 0.8 }}
             />
             {timelines.map((tl, idx) => (
-              <Line
+              <Area
                 key={tl.id}
                 type="monotone"
                 dataKey={`tl${idx}_${activeDim}`}
                 name={t(
                   `results.type_${tl.timeline_type}` as
-                    | "results.type_reality"
-                    | "results.type_parallel"
-                    | "results.type_extreme",
+                  | "results.type_reality"
+                  | "results.type_parallel"
+                  | "results.type_extreme",
                 )}
                 stroke={TIMELINE_COLORS[tl.timeline_type] ?? "#6b7280"}
                 strokeDasharray={TIMELINE_DASH[tl.timeline_type] ?? ""}
                 strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+                fillOpacity={1}
+                fill={`url(#color-${tl.id})`}
+                dot={false}
+                activeDot={{ r: 5, strokeWidth: 0 }}
                 connectNulls
               />
             ))}
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

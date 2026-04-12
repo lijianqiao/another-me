@@ -2,12 +2,12 @@
  * 设置页面
  *
  * Sprint 4：完整实现
- *  - Ollama 连接状态检测
+ *  - Ollama 连通状态检测
  *  - 模型选择
  *  - 语言切换
  *  - 戏剧化默认档位
  *  - 黑天鹅开关
- *  - 安全阀开关
+ *  - 安全 阀开关
  */
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -47,77 +47,81 @@ export default function SettingsPage() {
   };
 
   return (
-    <section className="settings-page">
-      <h2>{t("nav.settings")}</h2>
+    <section className="space-y-8 p-6 max-w-3xl mx-auto w-full">
+      <h2 className="text-2xl font-bold tracking-tight">{t("nav.settings")}</h2>
 
       {/* Ollama 状态 */}
-      <div className="settings-section">
-        <h3 className="settings-section__title">
+      <div className="space-y-4 pb-6 border-b border-border last:border-0">
+        <h3 className="text-lg font-semibold tracking-tight">
           {t("settings.ollama_title")}
         </h3>
 
-        <div className="ollama-status">
-          <div className="ollama-status__row">
-            <span className="ollama-status__label">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <span className="font-medium text-foreground tracking-wide min-w-max">
               {t("settings.ollama_status")}
             </span>
-            {ollamaStatus ? (
-              <span
-                className={`ollama-status__badge ${
-                  ollamaStatus.running
-                    ? "ollama-status__badge--ok"
-                    : "ollama-status__badge--err"
-                }`}
+            <div className="flex items-center gap-3">
+              {ollamaStatus ? (
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                    ollamaStatus.running
+                      ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                      : "bg-destructive/15 text-destructive"
+                  }`}
+                >
+                  {ollamaStatus.running
+                    ? t("settings.ollama_running")
+                    : t("settings.ollama_offline")}
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground">
+                  {checking ? t("common.loading") : "—"}
+                </span>
+              )}
+              <button
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                onClick={doCheckOllama}
+                disabled={checking}
               >
-                {ollamaStatus.running
-                  ? t("settings.ollama_running")
-                  : t("settings.ollama_offline")}
-              </span>
-            ) : (
-              <span className="ollama-status__badge">
-                {checking ? t("common.loading") : "—"}
-              </span>
-            )}
-            <button
-              className="btn btn--sm"
-              onClick={doCheckOllama}
-              disabled={checking}
-            >
-              {t("settings.ollama_refresh")}
-            </button>
+                {t("settings.ollama_refresh")}
+              </button>
+            </div>
           </div>
 
           {ollamaStatus?.running && (
             <>
-              <div className="ollama-status__row">
-                <span className="ollama-status__label">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <span className="font-medium text-foreground tracking-wide min-w-max">
                   {t("settings.target_model")}
                 </span>
-                <span>{settings.active_model_id}</span>
-                {ollamaStatus.target_model_ready ? (
-                  <span className="ollama-status__badge ollama-status__badge--ok">
-                    {t("settings.model_ready")}
-                  </span>
-                ) : (
-                  <span className="ollama-status__badge ollama-status__badge--err">
-                    {t("settings.model_missing")}
-                  </span>
-                )}
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="font-mono text-muted-foreground">{settings.active_model_id}</span>
+                  {ollamaStatus.target_model_ready ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded border border-green-200 bg-green-50 text-[10px] font-semibold text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400">
+                      {t("settings.model_ready")}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded border border-destructive/20 bg-destructive/10 text-[10px] font-semibold text-destructive">
+                      {t("settings.model_missing")}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {ollamaStatus.models.length > 0 && (
-                <div className="ollama-status__models">
-                  <span className="ollama-status__label">
+                <div className="space-y-3 pt-2">
+                  <span className="font-medium text-foreground tracking-wide block">
                     {t("settings.available_models")}
                   </span>
-                  <div className="ollama-status__model-list">
+                  <div className="flex flex-wrap gap-2">
                     {ollamaStatus.models.map((m) => (
                       <span
                         key={m}
-                        className={`ollama-model-tag ${
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
                           m.startsWith(settings.active_model_id)
-                            ? "ollama-model-tag--active"
-                            : ""
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
                         }`}
                       >
                         {m}
@@ -128,7 +132,7 @@ export default function SettingsPage() {
               )}
 
               {!ollamaStatus.target_model_ready && (
-                <p className="ollama-status__hint">
+                <p className="text-sm text-muted-foreground mt-3 px-4 py-3 bg-muted/50 rounded-lg">
                   {t("settings.model_pull_hint", {
                     model: settings.active_model_id,
                   })}
@@ -138,7 +142,7 @@ export default function SettingsPage() {
           )}
 
           {ollamaStatus && !ollamaStatus.running && (
-            <p className="ollama-status__hint">
+            <p className="text-sm text-muted-foreground mt-2">
               {t("settings.ollama_install_hint")}
             </p>
           )}
@@ -146,11 +150,11 @@ export default function SettingsPage() {
       </div>
 
       {/* 语言 */}
-      <div className="settings-section">
-        <h3 className="settings-section__title">{t("settings.language")}</h3>
-        <div className="settings-row">
+      <div className="space-y-4 pb-6 border-b border-border last:border-0">
+        <h3 className="text-lg font-semibold tracking-tight">{t("settings.language")}</h3>
+        <div className="flex items-center gap-4 w-full">
           <select
-            className="settings-select"
+            className="flex h-10 w-full md:w-[200px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             value={settings.language}
             onChange={(e) => void handleLanguageChange(e.target.value)}
           >
@@ -161,13 +165,13 @@ export default function SettingsPage() {
       </div>
 
       {/* 模型 ID */}
-      <div className="settings-section">
-        <h3 className="settings-section__title">
+      <div className="space-y-4 pb-6 border-b border-border last:border-0">
+        <h3 className="text-lg font-semibold tracking-tight">
           {t("settings.model_id")}
         </h3>
-        <div className="settings-row">
+        <div className="flex items-center gap-4 w-full">
           <input
-            className="settings-input"
+            className="flex h-10 w-full md:w-[300px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             type="text"
             value={settings.active_model_id}
             onChange={(e) => void update({ active_model_id: e.target.value })}
@@ -176,13 +180,13 @@ export default function SettingsPage() {
       </div>
 
       {/* 戏剧化默认档位 */}
-      <div className="settings-section">
-        <h3 className="settings-section__title">
+      <div className="space-y-4 pb-6 border-b border-border last:border-0">
+        <h3 className="text-lg font-semibold tracking-tight">
           {t("settings.drama_level")}
         </h3>
-        <div className="settings-row">
+        <div className="flex items-center gap-4 w-full">
           <select
-            className="settings-select"
+            className="flex h-10 w-full md:w-[200px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             value={settings.drama_level}
             onChange={(e) =>
               void update({ drama_level: Number(e.target.value) })
@@ -197,40 +201,51 @@ export default function SettingsPage() {
       </div>
 
       {/* 开关类设置 */}
-      <div className="settings-section">
-        <h3 className="settings-section__title">
+      <div className="space-y-4 pb-6 border-b border-border last:border-0">
+        <h3 className="text-lg font-semibold tracking-tight">
           {t("settings.toggles")}
         </h3>
-        <label className="settings-toggle">
-          <input
-            type="checkbox"
-            checked={settings.black_swan_enabled}
-            onChange={(e) =>
-              void update({ black_swan_enabled: e.target.checked })
-            }
-          />
-          <span className="settings-toggle__text">
-            {t("settings.black_swan")}
-          </span>
-          <span className="settings-toggle__desc">
-            {t("settings.black_swan_desc")}
-          </span>
+        
+        <label className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-card hover:bg-accent/10 transition-colors cursor-pointer">
+          <div className="space-y-0.5 max-w-[80%]">
+            <span className="text-base font-medium">
+              {t("settings.black_swan")}
+            </span>
+            <p className="text-sm text-muted-foreground">
+              {t("settings.black_swan_desc")}
+            </p>
+          </div>
+          <div>
+            <input
+              type="checkbox"
+              className="accent-primary w-5 h-5"
+              checked={settings.black_swan_enabled}
+              onChange={(e) =>
+                void update({ black_swan_enabled: e.target.checked })
+              }
+            />
+          </div>
         </label>
 
-        <label className="settings-toggle">
-          <input
-            type="checkbox"
-            checked={settings.safety_valve_enabled}
-            onChange={(e) =>
-              void update({ safety_valve_enabled: e.target.checked })
-            }
-          />
-          <span className="settings-toggle__text">
-            {t("settings.safety_valve")}
-          </span>
-          <span className="settings-toggle__desc">
-            {t("settings.safety_valve_desc")}
-          </span>
+        <label className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-card hover:bg-accent/10 transition-colors cursor-pointer mt-4">
+          <div className="space-y-0.5 max-w-[80%]">
+            <span className="text-base font-medium">
+              {t("settings.safety_valve")}
+            </span>
+            <p className="text-sm text-muted-foreground">
+              {t("settings.safety_valve_desc")}
+            </p>
+          </div>
+          <div>
+            <input
+              type="checkbox"
+              className="accent-primary w-5 h-5"
+              checked={settings.safety_valve_enabled}
+              onChange={(e) =>
+                void update({ safety_valve_enabled: e.target.checked })
+              }
+            />
+          </div>
         </label>
       </div>
     </section>

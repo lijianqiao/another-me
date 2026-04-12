@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { X } from "lucide-react";
 
 import { useUiStore } from "../../store";
 
@@ -17,18 +18,34 @@ export default function Toaster() {
 
   if (toasts.length === 0) return null;
 
+  const getBgClass = (kind: string) => {
+    switch (kind) {
+      case "error":
+        return "bg-destructive text-destructive-foreground";
+      case "success":
+        return "bg-green-600 text-white";
+      case "warning":
+        return "bg-yellow-600 text-white";
+      default:
+        return "bg-card text-card-foreground border border-border";
+    }
+  };
+
   return (
-    <div className="toaster">
+    <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50 max-w-sm">
       {toasts.map((t) => (
-        <div key={t.id} className={`toast toast--${t.kind}`}>
-          <span className="toast__body">
+        <div
+          key={t.id}
+          className={`rounded-lg p-3 flex items-start justify-between gap-3 shadow-lg animate-in fade-in slide-in-from-bottom-2 ${getBgClass(t.kind)}`}
+        >
+          <span className="text-sm flex-1">
             {t.message}
             {t.action && (
               <button
                 type="button"
-                className="toast__action"
+                className="ml-3 font-semibold hover:opacity-80 transition-opacity underline"
                 onClick={() => {
-                  t.action?.onClick();
+                  if (t.action && t.action.onClick) t.action.onClick();
                   dismiss(t.id);
                 }}
               >
@@ -36,8 +53,12 @@ export default function Toaster() {
               </button>
             )}
           </span>
-          <button className="toast__close" onClick={() => dismiss(t.id)}>
-            ×
+          <button
+            className="flex-shrink-0 hover:opacity-70 transition-opacity"
+            onClick={() => dismiss(t.id)}
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
       ))}

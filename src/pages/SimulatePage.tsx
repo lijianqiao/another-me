@@ -77,16 +77,18 @@ export default function SimulatePage() {
 
   if (running) {
     return (
-      <section className="simulate-page">
+      <section className="flex flex-col items-center justify-center min-h-[60vh] gap-8 animate-in fade-in duration-700">
         <SimulationLoading />
       </section>
     );
   }
 
   return (
-    <section className="simulate-page">
-      <h2>{t("simulate.title")}</h2>
-      <p className="simulate-page__subtitle">{t("simulate.subtitle")}</p>
+    <section className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="space-y-2 mb-2">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">{t("simulate.title")}</h2>
+        <p className="text-muted-foreground">{t("simulate.subtitle")}</p>
+      </div>
 
       <ProfileCheckDialog
         open={showProfileCheck}

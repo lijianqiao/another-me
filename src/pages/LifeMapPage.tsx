@@ -58,10 +58,10 @@ export default function LifeMapPage() {
         timelines: detail.result.timelines,
         letter: detail.result.letter
           ? {
-              content: detail.result.letter,
-              tone_type: "reflective",
-              shine_points: [],
-            }
+            content: detail.result.letter,
+            tone_type: "reflective",
+            shine_points: [],
+          }
           : null,
         dark_content_warning: false,
         emotional_recovery_needed: false,
@@ -94,14 +94,14 @@ export default function LifeMapPage() {
   };
 
   return (
-    <section className="lifemap-page">
-      <div className="lifemap-page__header">
-        <h2>{t("lifemap.title")}</h2>
-        <p className="lifemap-page__subtitle">{t("lifemap.subtitle")}</p>
+    <section className="flex flex-col gap-6 max-w-3xl">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-2xl font-bold tracking-tight">{t("lifemap.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("lifemap.subtitle")}</p>
       </div>
 
       {loading ? (
-        <p className="lifemap-page__loading">{t("common.loading")}</p>
+        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       ) : (
         <LifeMap
           nodes={nodes}

@@ -1,3 +1,4 @@
+
 /**
  * 当下闪光点组件
  * 在来信末尾强制展示，提醒用户珍惜当下
@@ -13,15 +14,19 @@ export default function ShinePoints({ points }: Props) {
   if (points.length === 0) return null;
 
   return (
-    <div className="shine-points">
-      <h4 className="shine-points__title">{t("letter.shine_title")}</h4>
-      <ul className="shine-points__list">
+    <div className="space-y-3 rounded-lg bg-card border border-border p-4">
+      <h4 className="text-sm font-semibold text-card-foreground">
+        {t("letter.shine_title")}
+      </h4>
+      <ul className="space-y-2">
         {points.map((point, i) => (
-          <li key={i} className="shine-points__item">
-            {point}
+          <li key={i} className="text-sm text-card-foreground flex items-start gap-2">
+            <span className="text-primary mt-1">✨</span>
+            <span>{point}</span>
           </li>
         ))}
       </ul>
     </div>
   );
 }
+

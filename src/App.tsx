@@ -8,6 +8,7 @@
  */
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { ThemeProvider } from "next-themes";
 import { RouterProvider } from "react-router-dom";
 
 import { router } from "./router";
@@ -23,6 +24,7 @@ export default function App() {
   const settingsLoaded = useSettingsStore((s) => s.loaded);
 
   useEffect(() => {
+    // Wait for the splash screen to be fully visible before mounting everything
     void loadProfile();
     void loadSettings();
   }, [loadProfile, loadSettings]);
@@ -33,5 +35,9 @@ export default function App() {
     }
   }, [settingsLoaded, language, i18n]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  );
 }

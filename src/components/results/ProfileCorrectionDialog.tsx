@@ -1,9 +1,6 @@
-/**
- * 画像修正对话框
- * Sprint 8：根据反馈建议，让用户确认是否修正画像
- */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Check } from "lucide-react";
 import type { ProfileCorrectionSuggestion } from "../../api/feedback";
 import { applyCorrection } from "../../api/feedback";
 import { useUiStore } from "../../store";
@@ -42,56 +39,61 @@ export default function ProfileCorrectionDialog({
   };
 
   return (
-    <div className="profile-correction-overlay" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-in fade-in flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="profile-correction-dialog"
+        className="w-full max-w-lg bg-popover p-6 shadow-xl border border-border rounded-xl animate-in zoom-in-95 fade-in duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3>{t("feedback.correction_title")}</h3>
-        <p className="profile-correction-dialog__desc">
+        <h3 className="text-xl font-semibold leading-none tracking-tight text-foreground mb-2">{t("feedback.correction_title")}</h3>
+        <p className="text-sm text-muted-foreground mb-6">
           {t("feedback.correction_desc")}
         </p>
 
-        <div className="profile-correction-dialog__list">
+        <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3 mb-6">
           {corrections.map((c) => (
-            <div key={c.field} className="profile-correction-item">
-              <div className="profile-correction-item__header">
-                <span className="profile-correction-item__field">
+            <div key={c.field} className="flex flex-col gap-3 p-4 rounded-lg border border-border bg-card shadow-sm transition-colors hover:border-border/80">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-foreground tracking-wide capitalize">
                   {t(`feedback.field_${c.field}`, c.field)}
                 </span>
-                <span className="profile-correction-item__confidence">
-                  {Math.round(c.confidence * 100)}%
+                <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
+                  {Math.round(c.confidence * 100)}% 准确率
                 </span>
               </div>
-              <div className="profile-correction-item__values">
-                <span className="profile-correction-item__old">
-                  {c.old_value || "-"}
+              <div className="flex items-center gap-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md font-mono mt-1">
+                <span className="truncate max-w-[40%] text-muted-foreground/80 line-through">
+                  {c.old_value || "无"}
                 </span>
-                <span className="profile-correction-item__arrow">&rarr;</span>
-                <span className="profile-correction-item__new">
+                <span className="text-muted-foreground/40 shrink-0">&rarr;</span>  
+                <span className="text-foreground font-medium truncate flex-1">
                   {c.new_value}
                 </span>
               </div>
-              {applied.has(c.field) ? (
-                <span className="profile-correction-item__done">
-                  {t("feedback.correction_applied")}
-                </span>
-              ) : (
-                <button
-                  className="btn btn--sm btn--primary"
-                  onClick={() => handleApply(c)}
-                  disabled={loading}
-                >
-                  {t("feedback.apply")}
-                </button>
-              )}
+              <div className="mt-2 flex justify-end">
+                {applied.has(c.field) ? (
+                  <span className="text-xs text-green-600 font-medium flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 rounded-md">
+                    <Check className="w-3.5 h-3.5" />
+                    {t("feedback.correction_applied")}
+                  </span>
+                ) : (
+                  <button
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 shadow-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+                    onClick={() => handleApply(c)}
+                    disabled={loading}
+                  >
+                    {t("feedback.apply")}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
 
-        <button className="btn btn--sm" onClick={onClose}>
-          {t("common.confirm")}
-        </button>
+        <div className="flex justify-end gap-3 pt-4 border-t border-border">
+          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-6 py-2" onClick={onClose}>
+            {t("common.confirm")}
+          </button>
+        </div>
       </div>
     </div>
   );
