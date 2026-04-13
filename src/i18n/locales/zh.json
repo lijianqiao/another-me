@@ -9,7 +9,9 @@
     "history": "历史",
     "lifemap": "人生地图",
     "models": "模型",
-    "settings": "设置"
+    "settings": "设置",
+    "collapse": "收起菜单",
+    "expand": "展开菜单"
   },
   "models": {
     "title": "模型管理",
@@ -168,7 +170,11 @@
   "history": {
     "title": "决策历史",
     "empty": "还没有推演记录。去开始你的第一次推演吧！",
-    "count": "共 {{n}} 条记录"
+    "count": "共 {{n}} 条记录",
+    "delete": "删除此记录",
+    "deleted": "已删除该推演记录",
+    "delete_confirm_title": "删除推演记录",
+    "delete_confirm_msg": "确定要删除这条推演记录吗？关联的时间线和人生地图节点也会一并删除，此操作不可撤销。"
   },
   "lifemap": {
     "title": "人生地图",
@@ -188,7 +194,12 @@
     "tone_silent": "沉默疏离型",
     "tone_warm": "温暖鼓励型",
     "tone_calm": "平静叙述型",
-    "tone_dark": "黑色幽默型"
+    "tone_dark": "黑色幽默型",
+    "stamp": "未来邮局",
+    "from_future": "写于某条时间线的未来",
+    "greeting": "亲爱的现在的你：",
+    "closing": "此致",
+    "signature": "未来的你"
   },
   "evolution": {
     "level_1": "初识",
@@ -255,6 +266,7 @@
     "thanks_not_me": "收到！引擎会学习调整。",
     "correction_title": "画像修正建议",
     "correction_desc": "根据你的反馈，引擎建议以下修正。确认后将更新你的画像。",
+    "confidence": "准确率",
     "correction_applied": "已应用",
     "apply": "应用",
     "field_personality_tags": "性格标签",

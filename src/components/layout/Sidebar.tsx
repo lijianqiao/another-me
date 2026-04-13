@@ -76,7 +76,7 @@ export default function Sidebar() {
             {open ? (
               <>
                 <PanelLeftClose className="h-5 w-5 shrink-0" />
-                <span className="text-sm truncate">收起菜单</span>
+                <span className="text-sm truncate">{t("nav.collapse")}</span>
               </>
             ) : (
               <PanelLeftOpen className="h-5 w-5 shrink-0" />

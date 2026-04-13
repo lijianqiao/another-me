@@ -3,6 +3,8 @@
  *
  * 节点按类型着色：决策（珊瑚）、时间线（靛蓝/紫/琥珀）、事件（绿/灰/红）
  * 点击节点展开详情面板
+ *
+ * 注意：SVG 中颜色为硬编码深色系，容器使用 .dark 强制暗色主题以确保可读性。
  */
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -101,14 +103,13 @@ export default function DecisionTree({ tree }: Props) {
       .attr("class", "dtree-link")
       .attr("fill", "none")
       .attr("stroke", (d) => {
-        // Main path gets neon cyan, alternatives get violet or dim colors
-        if (d.target.data.node_type === "decision") return "#0ff"; // neon cyan for decisions
-        if (d.target.data.node_type === "timeline") return "#a855f7"; // violet for alternate timelines
-        return "#334155"; // slate for events
+        if (d.target.data.node_type === "decision") return "#0ff";
+        if (d.target.data.node_type === "timeline") return "#a855f7";
+        return "#475569"; // slate-600，比原来的 334155 更亮
       })
       .attr("stroke-width", (d) => (d.target.data.node_type === "decision" ? 3 : 1.5))
       .attr("stroke-dasharray", (d) => (d.target.data.node_type === "timeline" ? "4,4" : "none"))
-      .attr("opacity", (d) => (d.target.data.node_type === "timeline" ? 0.4 : 0.8))
+      .attr("opacity", (d) => (d.target.data.node_type === "timeline" ? 0.5 : 0.8))
       .attr("d", linkGen as any);
 
     /* -------- nodes -------- */
@@ -143,17 +144,18 @@ export default function DecisionTree({ tree }: Props) {
         d.data.node_type === "decision" ? NODE_RADIUS + 4 : NODE_RADIUS,
       )
       .attr("fill", (d: HierarchyNode) => {
-        if (d.data.node_type === "decision") return "#002b36"; // dark blue inner
+        if (d.data.node_type === "decision") return "#002b36";
         return d.data.node_type === "timeline" ? "#2e1065" : "#0f172a";
       })
       .attr("stroke", (d: HierarchyNode) => {
-        if (d.data.node_type === "decision") return "#0ff"; // neon cyan
-        if (d.data.node_type === "timeline") return "#a855f7"; // violet
-        return "#64748b"; // slate
+        if (d.data.node_type === "decision") return "#0ff";
+        if (d.data.node_type === "timeline") return "#a855f7";
+        return "#64748b";
       })
       .attr("stroke-width", 2)
       .attr("filter", (d: HierarchyNode) => d.data.node_type === "decision" ? "url(#dtree-glow)" : "url(#dtree-shadow)");
 
+    /* 文字颜色：确保在深色容器上清晰可读 */
     nodeGroup
       .append("text")
       .attr("dy", "0.32em")
@@ -166,7 +168,7 @@ export default function DecisionTree({ tree }: Props) {
         d.data.node_type === "decision" ? "600" : "400",
       )
       .attr("fill", (d: HierarchyNode) =>
-        d.data.node_type === "decision" ? "#e2e8f0" : "#94a3b8"
+        d.data.node_type === "decision" ? "#ffffff" : "#cbd5e1"
       )
       .text((d: HierarchyNode) => {
         const maxLen = d.data.node_type === "event" ? 30 : 20;
@@ -184,8 +186,8 @@ export default function DecisionTree({ tree }: Props) {
   }, [draw]);
 
   return (
-    <div className="relative w-full bg-slate-950/40 rounded-xl border border-slate-800/60 overflow-hidden backdrop-blur-sm">
-      <h3 className="absolute top-4 left-6 text-sm font-semibold tracking-wider text-slate-300 z-10 select-none">
+    <div className="dark relative w-full rounded-xl border border-slate-800/60 overflow-hidden backdrop-blur-sm" style={{ background: "hsl(222 47% 7% / 0.95)" }}>
+      <h3 className="absolute top-4 left-6 text-sm font-semibold tracking-wider text-slate-200 z-10 select-none">
         {t("results.decision_tree_title")}
       </h3>
       <div className="w-full h-full overflow-auto" ref={containerRef}>
@@ -198,19 +200,19 @@ export default function DecisionTree({ tree }: Props) {
               className="w-3 h-3 rounded-full drop-shadow-[0_0_8px_rgba(0,255,255,0.8)]"
               style={{ background: "#0ff" }}
             />
-            <strong className="text-[#0ff] font-medium tracking-wide">{selected.label}</strong>
+            <strong className="text-[#0ff] font-medium tracking-wide flex-1">{selected.label}</strong>
             <button
-              className="text-muted-foreground hover:text-white transition-colors"
+              className="text-slate-400 hover:text-white transition-colors"
               onClick={() => setSelected(null)}
             >
               ✕
             </button>
           </div>
           {selected.detail && (
-            <p className="mt-4 text-sm text-slate-300 leading-relaxed">{selected.detail}</p>
+            <p className="mt-4 text-sm text-slate-200 leading-relaxed">{selected.detail}</p>
           )}
           {selected.emotion && (
-            <span className="inline-block mt-4 text-xs px-2 py-1 bg-slate-800 rounded text-slate-400 border border-slate-700">
+            <span className="inline-block mt-4 text-xs px-2 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700">
               {selected.emotion === "positive"
                 ? "🟢 " + t("results.emotion_positive")
                 : selected.emotion === "negative"
@@ -223,3 +225,4 @@ export default function DecisionTree({ tree }: Props) {
     </div>
   );
 }
+

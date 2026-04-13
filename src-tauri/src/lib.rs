@@ -128,6 +128,7 @@ pub fn run() {
             commands::simulate::simulate_decision,
             commands::history::list_decisions,
             commands::history::get_decision,
+            commands::history::delete_decision,
             commands::history::set_anchor_timeline,
             commands::history::clear_anchor,
             commands::history::get_anchor_timeline,

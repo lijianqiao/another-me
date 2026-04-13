@@ -66,6 +66,11 @@ export async function getDecision(
   });
 }
 
+// 删除决策
+export async function deleteDecision(decisionId: string): Promise<void> {
+  return invokeCommand("delete_decision", { decisionId });
+}
+
 // 锚定时间线
 export async function setAnchorTimeline(decisionId: string): Promise<void> {
   return invokeCommand("set_anchor_timeline", { decisionId });

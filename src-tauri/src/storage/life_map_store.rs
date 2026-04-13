@@ -89,6 +89,15 @@ pub fn get_life_map(
     Ok(result)
 }
 
+/// 删除指定决策关联的人生地图节点
+pub fn delete_by_decision(conn: &Connection, decision_id: &str) -> AppResult<()> {
+    conn.execute(
+        "DELETE FROM life_map_nodes WHERE decision_id = ?1",
+        params![decision_id],
+    )?;
+    Ok(())
+}
+
 /// 生成新的 life map node ID
 pub fn new_node_id() -> String {
     Uuid::new_v4().to_string()

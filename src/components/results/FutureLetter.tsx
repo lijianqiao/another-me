@@ -1,6 +1,6 @@
 /**
  * 未来来信展示组件
- * 信件全文 + 闪光点 + 复制按钮
+ * 信封 + 信纸样式 + 闪光点 + 复制按钮
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -66,30 +66,101 @@ export default function FutureLetter({ letter }: Props) {
     }
   };
 
+  const today = new Date();
+  const dateStr = today.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <div className="future-letter">
-      <div className="future-letter__header">
-        <span className="future-letter__icon">{emoji}</span>
-        <h3 className="future-letter__title">{t("letter.title")}</h3>
-        <span className="future-letter__tone">{toneLabel}</span>
-        <button
-          className="future-letter__copy"
-          onClick={handleCopy}
-          title={t("letter.copy")}
+    <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* 信封外壳 */}
+      <div className="relative max-w-2xl mx-auto">
+        {/* 邮票装饰 */}
+        <div className="absolute -top-3 -right-2 z-10 w-16 h-20 border-2 border-dashed border-muted-foreground/30 rounded-sm bg-card flex flex-col items-center justify-center gap-1 rotate-3 shadow-sm">
+          <span className="text-2xl leading-none">{emoji}</span>
+          <span className="text-[8px] text-muted-foreground font-mono tracking-wider">{t("letter.stamp")}</span>
+        </div>
+
+        {/* 信纸主体 */}
+        <div
+          className="relative rounded-lg shadow-lg overflow-hidden"
+          style={{
+            background: "linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.95) 100%)",
+          }}
         >
-          {copied ? "✓" : "📋"}
-        </button>
+          {/* 顶部装饰条 — 信封折痕效果 */}
+          <div className="h-1.5 bg-gradient-to-r from-primary/40 via-primary/60 to-primary/40" />
+
+          {/* 信纸内容区 */}
+          <div
+            className="px-8 py-8 sm:px-12 sm:py-10"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(transparent, transparent 31px, hsl(var(--border) / 0.3) 31px, hsl(var(--border) / 0.3) 32px)",
+              backgroundPositionY: "8px",
+            }}
+          >
+            {/* 信头 */}
+            <div className="flex items-start justify-between mb-8 pb-4 border-b border-border/50">
+              <div>
+                <h3 className="m-0 text-xl font-semibold text-foreground tracking-wide">
+                  {t("letter.title")}
+                </h3>
+                <p className="m-0 mt-1 text-xs text-muted-foreground italic">{t("letter.from_future")}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="block text-xs text-muted-foreground">{dateStr}</span>
+                <span className="inline-flex items-center gap-1 mt-1 text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                  {emoji} {toneLabel}
+                </span>
+              </div>
+            </div>
+
+            {/* 称呼 */}
+            <p className="text-sm text-muted-foreground italic mb-6">{t("letter.greeting")}</p>
+
+            {/* 正文 */}
+            <div className="text-[15px] leading-[2] text-foreground">
+              {normalized.split("\n").map((line, i) => (
+                <p key={i} className={`m-0 mb-2 indent-8 ${line.trim() === "" ? "h-4" : ""}`}>
+                  {line}
+                </p>
+              ))}
+            </div>
+
+            {/* 落款 */}
+            <div className="mt-10 pt-6 border-t border-border/30 flex items-end justify-between">
+              <div className="text-sm text-muted-foreground italic">
+                <p className="m-0">{t("letter.closing")}</p>
+                <p className="m-0 mt-1 font-medium text-foreground">{t("letter.signature")}</p>
+              </div>
+              <button
+                className="inline-flex items-center gap-1.5 border border-border bg-background text-muted-foreground cursor-pointer text-xs px-3 py-1.5 rounded-md transition-colors hover:bg-secondary hover:text-foreground"
+                onClick={handleCopy}
+                title={t("letter.copy")}
+              >
+                {copied ? "✓" : "📋"} {t("letter.copy")}
+              </button>
+            </div>
+          </div>
+
+          {/* 底部装饰条 */}
+          <div className="h-1 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+        </div>
+
+        {/* 信纸阴影装饰 — 层叠效果 */}
+        <div className="absolute -bottom-1 left-2 right-2 h-3 rounded-b-lg bg-card/50 border border-t-0 border-border/30 -z-10" />
+        <div className="absolute -bottom-2.5 left-4 right-4 h-3 rounded-b-lg bg-card/30 border border-t-0 border-border/20 -z-20" />
       </div>
 
-      <div className="future-letter__content">
-        {normalized.split("\n").map((line, i) => (
-          <p key={i} className={line.trim() === "" ? "future-letter__break" : ""}>
-            {line}
-          </p>
-        ))}
-      </div>
-
-      {shine_points.length > 0 && <ShinePoints points={shine_points} />}
+      {shine_points.length > 0 && (
+        <div className="max-w-2xl mx-auto mt-6">
+          <ShinePoints points={shine_points} />
+        </div>
+      )}
     </div>
   );
 }
+

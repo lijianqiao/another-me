@@ -9,7 +9,9 @@
     "history": "History",
     "lifemap": "Life Map",
     "models": "Models",
-    "settings": "Settings"
+    "settings": "Settings",
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "models": {
     "title": "Model Manager",
@@ -168,7 +170,11 @@
   "history": {
     "title": "Decision History",
     "empty": "No simulation records yet. Start your first simulation!",
-    "count": "{{n}} records"
+    "count": "{{n}} records",
+    "delete": "Delete this record",
+    "deleted": "Simulation record deleted",
+    "delete_confirm_title": "Delete Simulation Record",
+    "delete_confirm_msg": "Are you sure you want to delete this simulation? Associated timelines and life map nodes will also be removed. This cannot be undone."
   },
   "lifemap": {
     "title": "Life Map",
@@ -188,7 +194,12 @@
     "tone_silent": "Silent and distant",
     "tone_warm": "Warm and encouraging",
     "tone_calm": "Calm and narrative",
-    "tone_dark": "Dark humor"
+    "tone_dark": "Dark humor",
+    "stamp": "Future Post",
+    "from_future": "Written from a future timeline",
+    "greeting": "Dear present me,",
+    "closing": "Yours truly,",
+    "signature": "Future You"
   },
   "evolution": {
     "level_1": "Novice",
@@ -255,6 +266,7 @@
     "thanks_not_me": "Got it! The engine will adjust.",
     "correction_title": "Profile Correction Suggestions",
     "correction_desc": "Based on your feedback, the engine suggests the following corrections. Confirm to update your profile.",
+    "confidence": "confidence",
     "correction_applied": "Applied",
     "apply": "Apply",
     "field_personality_tags": "Personality Tags",

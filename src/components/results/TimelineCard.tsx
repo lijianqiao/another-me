@@ -104,8 +104,8 @@ export default function TimelineCard({ timeline, index }: Props) {
       )}
 
       {black_swan_event && (
-        <div className="mt-4 p-4 rounded-lg bg-zinc-900 text-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-700 dark:border-zinc-300 shadow-md text-sm leading-relaxed flex gap-3">
-          <span className="text-lg">🦢</span>
+        <div className="mt-4 p-4 rounded-lg bg-amber-50 text-amber-900 dark:bg-amber-950/60 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 shadow-sm text-sm leading-relaxed flex gap-3">
+          <span className="text-lg shrink-0">🦢</span>
           <div>
             <strong className="block mb-1 font-semibold">{t("results.black_swan_event_prefix")}</strong>
             <span className="opacity-90">{black_swan_event}</span>

@@ -94,7 +94,7 @@ export default function LifeMapPage() {
   };
 
   return (
-    <section className="flex flex-col gap-6 max-w-3xl">
+    <section className="flex flex-col gap-6 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col gap-2">
         <h2 className="text-2xl font-bold tracking-tight">{t("lifemap.title")}</h2>
         <p className="text-sm text-muted-foreground">{t("lifemap.subtitle")}</p>

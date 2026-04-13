@@ -19,7 +19,7 @@ export default function HomePage() {
   }, [status, profile, navigate]);
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <h2 className="text-2xl font-bold tracking-tight">{t("home.welcome")}</h2>
       <p className="text-muted-foreground">{t("app.tagline")}</p>
       <EvolutionBadge />

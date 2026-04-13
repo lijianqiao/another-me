@@ -8,11 +8,41 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { useProfileStore, useUiStore } from "../store";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import type {
   FinancialStatus,
   SocialTendency,
   UserProfileDraft,
 } from "../types";
+
+/** 统一输入框样式，与 shadcn Input 一致 */
+const INPUT_CLASS =
+  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors";
+
+// ── 顶层子组件：必须在渲染函数外定义，否则每次渲染都会重建 ──────────────────
+interface InputSectionProps {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}
+
+function InputSection({ label, required, children }: InputSectionProps) {
+  return (
+    <div className="flex flex-col gap-1.5 min-w-[320px] max-w-full">
+      <label className="text-sm font-medium text-foreground">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
 
 const TOTAL_STEPS = 4;
 
@@ -80,20 +110,8 @@ export default function OnboardingPage() {
     }
   };
 
-  const req = <span className="text-red-500 ml-1">*</span>;
-
-  const InputSection = ({ label, required, children }: any) => (
-    <div className="flex flex-col gap-1.5 min-w-[320px] max-w-full">
-      <label className="text-sm font-medium text-foreground">
-        {label}
-        {required && req}
-      </label>
-      {children}
-    </div>
-  );
-
   return (
-    <section className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] w-full py-10 px-4 max-w-2xl mx-auto">
+    <section className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] w-full py-10 px-4 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex gap-2.5 mb-8 w-full max-w-md justify-center">
         {Array.from({ length: TOTAL_STEPS }, (_, i) => (
           <div
@@ -126,7 +144,7 @@ export default function OnboardingPage() {
               <div className="flex flex-col gap-5 w-full">
                 <InputSection label={t("onboarding.field_occupation")} required={true}>
                   <input
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    className={INPUT_CLASS}
                     value={occupation}
                     onChange={(e) => setOccupation(e.target.value)}
                     placeholder={t("onboarding.field_occupation_ph")}
@@ -134,27 +152,31 @@ export default function OnboardingPage() {
                 </InputSection>
                 <InputSection label={t("onboarding.field_relationship")} required={true}>
                   <input
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    className={INPUT_CLASS}
                     value={relationship}
                     onChange={(e) => setRelationship(e.target.value)}
                     placeholder={t("onboarding.field_relationship_ph")}
                   />
                 </InputSection>
                 <InputSection label={t("onboarding.field_financial")}>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  <Select
                     value={financial}
-                    onChange={(e) => setFinancial(e.target.value as FinancialStatus)}
+                    onValueChange={(v) => setFinancial(v as FinancialStatus)}
                   >
-                    <option value="broke">{t("onboarding.financial_broke")}</option>
-                    <option value="saving">{t("onboarding.financial_saving")}</option>
-                    <option value="stable">{t("onboarding.financial_stable")}</option>
-                    <option value="debt">{t("onboarding.financial_debt")}</option>
-                  </select>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="broke">{t("onboarding.financial_broke")}</SelectItem>
+                      <SelectItem value="saving">{t("onboarding.financial_saving")}</SelectItem>
+                      <SelectItem value="stable">{t("onboarding.financial_stable")}</SelectItem>
+                      <SelectItem value="debt">{t("onboarding.financial_debt")}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </InputSection>
                 <InputSection label={t("onboarding.field_location")}>
                   <input
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    className={INPUT_CLASS}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder={t("onboarding.field_location_ph")}
@@ -170,26 +192,30 @@ export default function OnboardingPage() {
               <div className="flex flex-col gap-5 w-full">
                 <InputSection label={t("onboarding.field_habits")} required={true}>
                   <input
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    className={INPUT_CLASS}
                     value={habits}
                     onChange={(e) => setHabits(e.target.value)}
                     placeholder={t("onboarding.field_habits_ph")}
                   />
                 </InputSection>
                 <InputSection label={t("onboarding.field_social")}>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                  <Select
                     value={social}
-                    onChange={(e) => setSocial(e.target.value as SocialTendency)}
+                    onValueChange={(v) => setSocial(v as SocialTendency)}
                   >
-                    <option value="introvert">{t("onboarding.social_introvert")}</option>
-                    <option value="neutral">{t("onboarding.social_neutral")}</option>
-                    <option value="extrovert">{t("onboarding.social_extrovert")}</option>
-                  </select>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="introvert">{t("onboarding.social_introvert")}</SelectItem>
+                      <SelectItem value="neutral">{t("onboarding.social_neutral")}</SelectItem>
+                      <SelectItem value="extrovert">{t("onboarding.social_extrovert")}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </InputSection>
                 <InputSection label={t("onboarding.field_health")}>
                   <input
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    className={INPUT_CLASS}
                     value={healthStatus}
                     onChange={(e) => setHealthStatus(e.target.value)}
                     placeholder={t("onboarding.field_health_ph")}
@@ -221,7 +247,7 @@ export default function OnboardingPage() {
                 </InputSection>
                 <InputSection label={t("onboarding.field_dreams")}>
                   <input
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    className={INPUT_CLASS}
                     value={dreams}
                     onChange={(e) => setDreams(e.target.value)}
                     placeholder={t("onboarding.field_dreams_ph")}

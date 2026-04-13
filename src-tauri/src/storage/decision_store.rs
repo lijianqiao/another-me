@@ -164,6 +164,15 @@ pub fn get_today_count(conn: &Connection, profile_id: &str) -> AppResult<u32> {
     Ok(count)
 }
 
+/// 删除一条决策记录及其关联的时间线（事务保护）
+pub fn delete_decision(conn: &Connection, decision_id: &str) -> AppResult<()> {
+    let tx = conn.unchecked_transaction()?;
+    tx.execute("DELETE FROM timelines WHERE decision_id = ?1", params![decision_id])?;
+    tx.execute("DELETE FROM decisions WHERE id = ?1", params![decision_id])?;
+    tx.commit()?;
+    Ok(())
+}
+
 /// 为新推演生成 decision_id
 pub fn new_decision_id() -> String {
     Uuid::new_v4().to_string()

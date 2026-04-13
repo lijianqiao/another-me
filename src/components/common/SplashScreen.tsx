@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "../../utils/shadcn";
 
-const QUOTES = [
-    "每个人生选择的背后",
-    "都有一条被放弃的时间线",
-];
-
 export function SplashScreen() {
+    const { t } = useTranslation();
     const [line, setLine] = useState(0);
+
+    // 将 app.tagline 按句号/逗号拆成两行
+    const tagline = t("app.tagline");
+    const splitIdx = tagline.search(/[，,。.]/);
+    const quotes =
+        splitIdx > 0
+            ? [tagline.slice(0, splitIdx + 1), tagline.slice(splitIdx + 1)]
+            : [tagline, ""];
 
     useEffect(() => {
         const t1 = setTimeout(() => setLine(1), 300);
@@ -28,16 +33,18 @@ export function SplashScreen() {
                             line >= 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                         )}
                     >
-                        {QUOTES[0]}
+                        {quotes[0]}
                     </p>
-                    <p
-                        className={cn(
-                            "transition-all duration-1000 delay-500",
-                            line >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                        )}
-                    >
-                        {QUOTES[1]}
-                    </p>
+                    {quotes[1] && (
+                        <p
+                            className={cn(
+                                "transition-all duration-1000 delay-500",
+                                line >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                            )}
+                        >
+                            {quotes[1]}
+                        </p>
+                    )}
                 </div>
                 <div className="mt-8 h-px w-24 overflow-hidden rounded-full bg-muted">
                     <div className="h-full w-full origin-left animate-pulse bg-primary/40"></div>
@@ -46,3 +53,4 @@ export function SplashScreen() {
         </div>
     );
 }
+

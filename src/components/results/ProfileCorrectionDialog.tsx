@@ -57,7 +57,7 @@ export default function ProfileCorrectionDialog({
                   {t(`feedback.field_${c.field}`, c.field)}
                 </span>
                 <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
-                  {Math.round(c.confidence * 100)}% 准确率
+                  {Math.round(c.confidence * 100)}% {t("feedback.confidence")}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md font-mono mt-1">

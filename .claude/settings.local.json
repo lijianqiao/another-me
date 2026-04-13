@@ -7,7 +7,10 @@
       "mcp__plugin_context-mode_context-mode__ctx_execute",
       "Bash(xargs grep:*)",
       "Bash(npx eslint:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "mcp__plugin_context-mode_context-mode__ctx_execute_file",
+      "Bash(wc -l E:/projects/another-me/src/i18n/locales/*.json)"
     ]
   }
 }

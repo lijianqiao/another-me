@@ -9,6 +9,12 @@ import ProfileCorrectionDialog from "../components/results/ProfileCorrectionDial
 import TimelineCard from "../components/results/TimelineCard";
 import DecisionTree from "../components/results/DecisionTree";
 import LifeChart from "../components/results/LifeChart";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { getAnchorTimeline, setAnchorTimeline, clearAnchor } from "../api/history";
 import type { ProfileCorrectionSuggestion } from "../api/feedback";
 import { downloadDir } from "@tauri-apps/api/path";
@@ -33,7 +39,6 @@ export default function ResultsPage() {
   const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false);      
   const [correctionFeedbackId, setCorrectionFeedbackId] = useState("");
   const [corrections, setCorrections] = useState<ProfileCorrectionSuggestion[]>([]);
-  const [showExportMenu, setShowExportMenu] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,70 +123,55 @@ export default function ResultsPage() {
               : `📌 ${t("results.set_anchor")}`}
           </button>
           
-          <div className="relative group inline-block">
-            <button
-              className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3"
-              onClick={() => setShowExportMenu((p) => !p)}
-            >
-              {t("results.export")}
-            </button>
-            {showExportMenu && (
-              <div className="absolute right-0 top-full mt-2 w-32 rounded-md border border-border bg-popover text-popover-foreground shadow-lg shadow-black/5 outline-none z-50 flex flex-col p-1 animate-in fade-in zoom-in-95">
-                <button
-                  className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                  onClick={async () => {
-                    setShowExportMenu(false);
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-8 px-3"
+              >
+                {t("results.export")}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem
+                onSelect={async () => {
+                  try {
+                    const json = await exportDecisionJson(decision_id);
+                    downloadAsFile(json, `another-me-${decision_id.slice(0, 8)}.json`);
+                    const dir = await downloadDir();
+                    pushToast("info", t("results.export_done_downloads"), {
+                      label: t("results.open_downloads_folder"),
+                      onClick: () => { void openPathInExplorer(dir); },
+                    });
+                  } catch (err) {
+                    pushToast("error", t("errors.generic", { detail: String(err) }));
+                  }
+                }}
+              >
+                JSON
+              </DropdownMenuItem>
+              {hasTree && (
+                <DropdownMenuItem
+                  onSelect={async () => {
                     try {
-                      const json = await exportDecisionJson(decision_id);       
-                      downloadAsFile(json, `another-me-${decision_id.slice(0, 8)}.json`);
+                      await exportElementAsPng(
+                        ".results-export-snapshot .decision-tree",
+                        `decision-tree-${decision_id.slice(0, 8)}.png`,
+                      );
                       const dir = await downloadDir();
-                      pushToast("info", t("results.export_done_downloads"), {   
+                      pushToast("info", t("results.export_done_downloads"), {
                         label: t("results.open_downloads_folder"),
-                        onClick: () => {
-                          void openPathInExplorer(dir);
-                        },
+                        onClick: () => { void openPathInExplorer(dir); },
                       });
                     } catch (err) {
-                      pushToast(
-                        "error",
-                        t("errors.generic", { detail: String(err) }),
-                      );
+                      pushToast("error", t("errors.generic", { detail: String(err) }));
                     }
                   }}
                 >
-                  JSON
-                </button>
-                {hasTree && (
-                  <button
-                    className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                    onClick={async () => {
-                      setShowExportMenu(false);
-                      try {
-                        await exportElementAsPng(
-                          ".results-export-snapshot .decision-tree",
-                          `decision-tree-${decision_id.slice(0, 8)}.png`,       
-                        );
-                        const dir = await downloadDir();
-                        pushToast("info", t("results.export_done_downloads"), { 
-                          label: t("results.open_downloads_folder"),
-                          onClick: () => {
-                            void openPathInExplorer(dir);
-                          },
-                        });
-                      } catch (err) {
-                        pushToast(
-                          "error",
-                          t("errors.generic", { detail: String(err) }),
-                        );
-                      }
-                    }}
-                  >
-                    PNG
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+                  PNG
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <button
             className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 transition-colors"

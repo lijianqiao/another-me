@@ -69,15 +69,15 @@ export default function SimulationLoading() {
     pct !== null ? 264 - (264 * Math.min(pct, 100)) / 100 : 66;
 
   return (
-    <div className="sim-loading">
-      <div className="sim-loading__ring">
-        <svg viewBox="0 0 100 100" className="sim-loading__svg">
+    <div className="flex flex-col items-center justify-center py-16 px-5 text-center">
+      <div className="w-20 h-20 mb-6 relative">
+        <svg viewBox="0 0 100 100" className="w-full h-full">
           <circle
             cx="50"
             cy="50"
             r="42"
             fill="none"
-            stroke="#e5e7eb"
+            className="stroke-muted"
             strokeWidth="6"
           />
           <circle
@@ -85,26 +85,31 @@ export default function SimulationLoading() {
             cy="50"
             r="42"
             fill="none"
-            stroke="#4f46e5"
+            className="stroke-primary"
             strokeWidth="6"
             strokeLinecap="round"
             strokeDasharray="264"
             strokeDashoffset={dashOffset}
-            className={pct === null ? "sim-loading__arc" : ""}
-            style={{ transition: "stroke-dashoffset 0.5s ease" }}
+            style={{
+              transition: "stroke-dashoffset 0.5s ease",
+              ...(pct === null ? { animation: "spin 1.4s ease-in-out infinite", transformOrigin: "center" } : {}),
+            }}
           />
         </svg>
         {pct !== null && (
-          <span className="sim-loading__pct">{pct}%</span>
+          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-semibold text-primary">
+            {pct}%
+          </span>
         )}
       </div>
-      <p className="sim-loading__text">{message}</p>
-      <p className="sim-loading__hint">{t("simulate.loading_hint")}</p>
+      <p className="text-base text-foreground mb-2">{message}</p>
+      <p className="text-sm text-muted-foreground">{t("simulate.loading_hint")}</p>
       {progress && progress.total > 0 && (
-        <p className="sim-loading__step">
+        <p className="text-xs text-muted-foreground/60 mt-2 font-mono">
           {progress.current}/{progress.total}
         </p>
       )}
     </div>
   );
 }
+

@@ -51,10 +51,13 @@
     --border: 12 6.5% 15.1%;
     --input: 12 6.5% 15.1%;
     --ring: 142.1 70.6% 45.3%;
+    --chart-1: 142.1 70.6% 45.3%;
+    --chart-2: 173 58% 52%;
+    --chart-3: 197 60% 52%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -68,115 +71,18 @@
   }
 }
 
-/* Fallbacks for AppShell and basic layout we haven't ported fully yet */
+/* 通用按钮样式（供未迁移到 shadcn Button 的组件使用） */
 @layer components {
-  .app-shell {
-    @apply flex flex-col h-screen;
-  }
-  .app-shell__body {
-    @apply flex flex-1 min-h-0 relative;
-  }
-  .app-shell__main {
-    @apply flex-1 p-6 lg:p-10 overflow-auto relative z-10 mx-auto w-full max-w-7xl;
-  }
-  .app-header {
-    @apply flex items-center gap-4 px-6 py-4 border-b bg-background/80 backdrop-blur-md sticky top-0 z-50;
-  }
-  .app-header__title {
-    @apply m-0 text-lg font-semibold tracking-tight;
-  }
-  .app-sidebar {
-    @apply w-56 flex-shrink-0 bg-card border-r border-border p-4 transition-all duration-300 z-40;
-  }
-  .app-sidebar--closed {
-    @apply w-0 p-0 overflow-hidden border-r-0 opacity-0;
-  }
-  .app-sidebar ul {
-    @apply list-none p-0 m-0 space-y-1;
-  }
-  .nav-link {
-    @apply block px-4 py-2.5 rounded-md text-foreground text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground;
-  }
-  .nav-link--active {
-    @apply bg-primary/10 text-primary hover:bg-primary/15;
-  }
   .btn {
     @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-6 py-2;
   }
   .btn--primary {
     @apply bg-primary text-primary-foreground hover:bg-primary/90 border-transparent shadow hover:-translate-y-[1px];
   }
-  .toast {
-    @apply flex items-center gap-3 px-4 py-3 rounded-md border border-border bg-card text-card-foreground shadow-lg min-w-[240px];
-  }
-  .toast--success { @apply bg-green-500 text-white border-green-600; }
-  .toast--error { @apply bg-destructive text-destructive-foreground border-red-600; }
-  .toast--warning { @apply bg-orange-500 text-white border-orange-600; }
-  .toast--info { @apply bg-blue-500 text-white border-blue-600; }
 }
 
-/* Critical remaining fallback components until we migrate 100% */
-.toaster {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 1000;
+/* SVG 旋转动画（SimulationLoading 用） */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
-.toast__close {
-  background: transparent;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  font-size: 16px;
-  margin-left: auto;
-}
-
-.sim-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-}
-.sim-loading__ring {
-  width: 80px;
-  height: 80px;
-  margin-bottom: 24px;
-  position: relative;
-}
-.sim-loading__svg { width: 100%; height: 100%; }
-.sim-loading__arc {
-  animation: spin-arc 1.4s ease-in-out infinite;
-  transform-origin: center;
-}
-@keyframes spin-arc { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-.sim-loading__text { font-size: 16px; color: hsl(var(--foreground)); margin: 0 0 8px; }
-.sim-loading__pct {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  font-size: 16px; font-weight: 600; color: hsl(var(--primary));
-}
-.future-letter {
-  background: hsl(var(--card)); border: 1px solid hsl(var(--border));
-  border-radius: 12px; padding: 28px; margin-top: 32px;
-}
-.future-letter__header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-.future-letter__title { margin: 0; font-size: 18px; color: hsl(var(--foreground)); }
-.future-letter__tone { font-size: 12px; background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); padding: 2px 8px; border-radius: 10px; margin-left: auto; }
-.future-letter__copy { border: none; background: hsl(var(--secondary)); cursor: pointer; font-size: 14px; padding: 4px 8px; border-radius: 6px; color: hsl(var(--secondary-foreground)); transition: background 0.15s; }
-.future-letter__content { font-size: 15px; line-height: 1.8; color: hsl(var(--foreground)); white-space: pre-wrap; }
-.future-letter__content p { margin: 0 0 6px; }
-.shine-points {
-  margin-top: 24px; padding: 16px;
-  background: linear-gradient(135deg, hsl(45 100% 90% / 0.8) 0%, hsl(45 100% 80% / 0.8) 100%);
-  border-radius: 10px;
-}
-.dark .shine-points { background: linear-gradient(135deg, hsl(45 50% 20%) 0%, hsl(45 50% 15%) 100%); }
-.shine-points__title { margin: 0 0 10px; font-size: 15px; color: hsl(45 90% 30%); }
-.dark .shine-points__title { color: hsl(45 90% 70%); }
-.shine-points__list { list-style: none; padding: 0; margin: 0; }
-.shine-points__item { padding: 4px 0; font-size: 14px; color: hsl(45 90% 20%); }
-.dark .shine-points__item { color: hsl(45 90% 80%); }

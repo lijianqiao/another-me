@@ -14,6 +14,14 @@ import { useTranslation } from "react-i18next";
 
 import { checkOllamaStatus, type OllamaStatus } from "../api/settings";
 import { useSettingsStore, useUiStore } from "../store";
+import { Switch } from "../components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -47,7 +55,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <section className="space-y-8 p-6 max-w-3xl mx-auto w-full">
+    <section className="space-y-8 p-6 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
       <h2 className="text-2xl font-bold tracking-tight">{t("nav.settings")}</h2>
 
       {/* Ollama 状态 */}
@@ -153,14 +161,18 @@ export default function SettingsPage() {
       <div className="space-y-4 pb-6 border-b border-border last:border-0">
         <h3 className="text-lg font-semibold tracking-tight">{t("settings.language")}</h3>
         <div className="flex items-center gap-4 w-full">
-          <select
-            className="flex h-10 w-full md:w-[200px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          <Select
             value={settings.language}
-            onChange={(e) => void handleLanguageChange(e.target.value)}
+            onValueChange={(v) => void handleLanguageChange(v)}
           >
-            <option value="zh">中文</option>
-            <option value="en">English</option>
-          </select>
+            <SelectTrigger className="w-full md:w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="zh">中文</SelectItem>
+              <SelectItem value="en">English</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -185,18 +197,20 @@ export default function SettingsPage() {
           {t("settings.drama_level")}
         </h3>
         <div className="flex items-center gap-4 w-full">
-          <select
-            className="flex h-10 w-full md:w-[200px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            value={settings.drama_level}
-            onChange={(e) =>
-              void update({ drama_level: Number(e.target.value) })
-            }
+          <Select
+            value={String(settings.drama_level)}
+            onValueChange={(v) => void update({ drama_level: Number(v) })}
           >
-            <option value={1}>1 — {t("settings.drama_1")}</option>
-            <option value={2}>2 — {t("settings.drama_2")}</option>
-            <option value={3}>3 — {t("settings.drama_3")}</option>
-            <option value={4}>4 — {t("settings.drama_4")}</option>
-          </select>
+            <SelectTrigger className="w-full md:w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1 — {t("settings.drama_1")}</SelectItem>
+              <SelectItem value="2">2 — {t("settings.drama_2")}</SelectItem>
+              <SelectItem value="3">3 — {t("settings.drama_3")}</SelectItem>
+              <SelectItem value="4">4 — {t("settings.drama_4")}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -215,16 +229,12 @@ export default function SettingsPage() {
               {t("settings.black_swan_desc")}
             </p>
           </div>
-          <div>
-            <input
-              type="checkbox"
-              className="accent-primary w-5 h-5"
+          <Switch
               checked={settings.black_swan_enabled}
-              onChange={(e) =>
-                void update({ black_swan_enabled: e.target.checked })
+              onCheckedChange={(checked) =>
+                void update({ black_swan_enabled: checked })
               }
             />
-          </div>
         </label>
 
         <label className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-card hover:bg-accent/10 transition-colors cursor-pointer mt-4">
@@ -236,16 +246,12 @@ export default function SettingsPage() {
               {t("settings.safety_valve_desc")}
             </p>
           </div>
-          <div>
-            <input
-              type="checkbox"
-              className="accent-primary w-5 h-5"
+          <Switch
               checked={settings.safety_valve_enabled}
-              onChange={(e) =>
-                void update({ safety_valve_enabled: e.target.checked })
+              onCheckedChange={(checked) =>
+                void update({ safety_valve_enabled: checked })
               }
             />
-          </div>
         </label>
       </div>
     </section>

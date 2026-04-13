@@ -103,10 +103,20 @@ export default function ModelManagerPage() {
         }
         return next;
       });
+      // 根据 active_model_id 推断当前激活的 provider
+      // 如果当前模型 ID 与某个云端 provider 的默认模型前缀匹配，则认为该 provider 已激活
+      const matched = CLOUD_PROVIDERS.find((cp) =>
+        activeModelId.startsWith(cp.defaultModel.split("-")[0])
+      );
+      if (matched && statuses.find((s) => s.provider === matched.id)?.has_key) {
+        setActiveProvider(matched.id);
+      } else {
+        setActiveProvider("ollama");
+      }
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [activeModelId]);
 
   useEffect(() => {
     void refresh();
@@ -182,7 +192,7 @@ export default function ModelManagerPage() {
   };
 
   return (
-    <section className="space-y-8 p-6 max-w-3xl mx-auto w-full">
+    <section className="space-y-8 p-6 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
       <h2 className="text-2xl font-bold tracking-tight">{t("models.title")}</h2>
       <p className="text-muted-foreground mb-6">{t("models.subtitle")}</p>
 
@@ -209,7 +219,7 @@ export default function ModelManagerPage() {
             disabled={downloading}
           />
           <button
-            className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+            className="h-10 px-5 py-2 inline-flex items-center justify-center whitespace-nowrap shrink-0 rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={handleDownload}
             disabled={downloading || !newModelId.trim()}
           >
@@ -226,7 +236,7 @@ export default function ModelManagerPage() {
         {models.map((m) => (
           <div
             key={m.name}
-            className={`g-card border p-5 rounded-lg flex flex-col gap-4 sm:flex-row sm:items-center justify-between transition-colors ${m.is_active ? "model-card--active" : ""}`}
+            className={`bg-card border p-5 rounded-lg flex flex-col gap-4 sm:flex-row sm:items-center justify-between transition-colors ${m.is_active ? "border-primary/50 bg-primary/5" : ""}`}
           >
             <div className="flex items-center gap-3">
               <span className="font-medium">{m.name}</span>
@@ -274,8 +284,11 @@ export default function ModelManagerPage() {
                 <div className="flex items-center justify-between mb-4">
                   <span className="font-semibold text-lg">{cp.label}</span>
                   <span
-                    className={`	ext-[10px] px-2 py-0.5 rounded-full font-semibold ${hasKey ? "cloud-provider-card__badge--ok" : ""
-                      }`}
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                      hasKey
+                        ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                        : "bg-muted text-muted-foreground"
+                    }`}
                   >
                     {hasKey
                       ? t("settings.key_configured")
