@@ -18,7 +18,7 @@ interface Props {
 
 interface HierarchyNode extends d3.HierarchyPointNode<TreeNode> { }
 
-const MARGIN = { top: 30, right: 160, bottom: 30, left: 140 };
+const MARGIN = { top: 30, right: 80, bottom: 30, left: 140 };
 const NODE_RADIUS = 10;
 const ROW_HEIGHT = 48;
 
@@ -37,20 +37,24 @@ export default function DecisionTree({ tree }: Props) {
 
     const root = d3.hierarchy(tree);
     const leafCount = root.leaves().length;
+    const treeDepth = root.height;
     const height = Math.max(360, leafCount * ROW_HEIGHT + MARGIN.top + MARGIN.bottom);
-    const width = Math.max(containerWidth, 700);
+    // 根据树的实际深度按需分配宽度，避免连接线过长
+    const treeWidth = treeDepth * 180 + MARGIN.left + MARGIN.right;
+    // SVG 撑满容器，树居中
+    const svgWidth = Math.max(containerWidth, treeWidth);
 
     const treeLayout = d3
       .tree<TreeNode>()
       .size([
         height - MARGIN.top - MARGIN.bottom,
-        width - MARGIN.left - MARGIN.right,
+        treeWidth - MARGIN.left - MARGIN.right,
       ])
       .separation((a, b) => (a.parent === b.parent ? 1 : 1.3));
 
     const rootNode = treeLayout(root);
 
-    svg.attr("width", width).attr("height", height);
+    svg.attr("width", svgWidth).attr("height", height);
 
     /* -------- defs: drop shadow + gradient -------- */
     const defs = svg.append("defs");
@@ -86,9 +90,11 @@ export default function DecisionTree({ tree }: Props) {
     feMerge.append("feMergeNode").attr("in", "coloredBlur");
     feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
+    // 将树居中于 SVG 中
+    const offsetX = (svgWidth - treeWidth) / 2 + MARGIN.left;
     const g = svg
       .append("g")
-      .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+      .attr("transform", `translate(${offsetX},${MARGIN.top})`);
 
     /* -------- links: smooth curves -------- */
     const linkGen = d3
@@ -105,7 +111,10 @@ export default function DecisionTree({ tree }: Props) {
       .attr("stroke", (d) => {
         if (d.target.data.node_type === "decision") return "#0ff";
         if (d.target.data.node_type === "timeline") return "#a855f7";
-        return "#475569"; // slate-600，比原来的 334155 更亮
+        // event 连线按 emotion 着色
+        if (d.target.data.emotion === "positive") return "#22c55e";
+        if (d.target.data.emotion === "negative") return "#ef4444";
+        return "#3b82f6"; // neutral
       })
       .attr("stroke-width", (d) => (d.target.data.node_type === "decision" ? 3 : 1.5))
       .attr("stroke-dasharray", (d) => (d.target.data.node_type === "timeline" ? "4,4" : "none"))
@@ -145,12 +154,19 @@ export default function DecisionTree({ tree }: Props) {
       )
       .attr("fill", (d: HierarchyNode) => {
         if (d.data.node_type === "decision") return "#002b36";
-        return d.data.node_type === "timeline" ? "#2e1065" : "#0f172a";
+        if (d.data.node_type === "timeline") return "#2e1065";
+        // event 节点按 emotion 着色
+        if (d.data.emotion === "positive") return "#052e16";
+        if (d.data.emotion === "negative") return "#450a0a";
+        return "#0c1a3d"; // neutral / 无 emotion
       })
       .attr("stroke", (d: HierarchyNode) => {
         if (d.data.node_type === "decision") return "#0ff";
         if (d.data.node_type === "timeline") return "#a855f7";
-        return "#64748b";
+        // event 节点按 emotion 着色
+        if (d.data.emotion === "positive") return "#22c55e";
+        if (d.data.emotion === "negative") return "#ef4444";
+        return "#3b82f6"; // neutral / 无 emotion
       })
       .attr("stroke-width", 2)
       .attr("filter", (d: HierarchyNode) => d.data.node_type === "decision" ? "url(#dtree-glow)" : "url(#dtree-shadow)");
@@ -171,7 +187,7 @@ export default function DecisionTree({ tree }: Props) {
         d.data.node_type === "decision" ? "#ffffff" : "#cbd5e1"
       )
       .text((d: HierarchyNode) => {
-        const maxLen = d.data.node_type === "event" ? 30 : 20;
+        const maxLen = 10;
         return d.data.label.length > maxLen
           ? d.data.label.slice(0, maxLen) + "…"
           : d.data.label;
@@ -186,7 +202,7 @@ export default function DecisionTree({ tree }: Props) {
   }, [draw]);
 
   return (
-    <div className="dark relative w-full rounded-xl border border-slate-800/60 overflow-hidden backdrop-blur-sm" style={{ background: "hsl(222 47% 7% / 0.95)" }}>
+    <div className="decision-tree dark relative w-full rounded-xl border border-slate-800/60 overflow-hidden backdrop-blur-sm" style={{ background: "hsl(222 47% 7% / 0.95)" }}>
       <h3 className="absolute top-4 left-6 text-sm font-semibold tracking-wider text-slate-200 z-10 select-none">
         {t("results.decision_tree_title")}
       </h3>
@@ -225,4 +241,3 @@ export default function DecisionTree({ tree }: Props) {
     </div>
   );
 }
-

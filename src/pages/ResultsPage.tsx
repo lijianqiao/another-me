@@ -21,7 +21,7 @@ import { downloadDir } from "@tauri-apps/api/path";
 
 import { exportDecisionJson } from "../api/export";
 import { openPathInExplorer } from "../api/system";
-import { downloadAsFile, exportElementAsPng } from "../utils/export";
+import { downloadAsFile, exportResultsAsPdf } from "../utils/export";
 import { useSimulationStore, useUiStore } from "../store";
 
 type Tab = "timelines" | "tree" | "chart" | "letter";
@@ -153,27 +153,54 @@ export default function ResultsPage() {
               >
                 JSON
               </DropdownMenuItem>
-              {hasTree && (
-                <DropdownMenuItem
-                  onSelect={async () => {
-                    try {
-                      await exportElementAsPng(
-                        ".results-export-snapshot .decision-tree",
-                        `decision-tree-${decision_id.slice(0, 8)}.png`,
-                      );
-                      const dir = await downloadDir();
-                      pushToast("info", t("results.export_done_downloads"), {
-                        label: t("results.open_downloads_folder"),
-                        onClick: () => { void openPathInExplorer(dir); },
-                      });
-                    } catch (err) {
-                      pushToast("error", t("errors.generic", { detail: String(err) }));
-                    }
-                  }}
-                >
-                  PNG
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem
+                onSelect={async () => {
+                  try {
+                    await exportResultsAsPdf(
+                      {
+                        title: t("results.title"),
+                        timelines,
+                        decisionTree: decision_tree,
+                        letter,
+                        labels: {
+                          timeline: t("results.timeline"),
+                          typeReality: t("results.type_reality"),
+                          typeParallel: t("results.type_parallel"),
+                          typeExtreme: t("results.type_extreme"),
+                          keyEvents: t("results.key_events"),
+                          emotionSection: t("results.emotion_section"),
+                          emotionEnergy: t("results.emotion_energy"),
+                          emotionSatisfaction: t("results.emotion_satisfaction_dim"),
+                          emotionRegret: t("results.emotion_regret"),
+                          emotionHope: t("results.emotion_hope"),
+                          emotionLoneliness: t("results.emotion_loneliness"),
+                          blackSwanLabel: t("results.black_swan_event_prefix"),
+                          decisionTreeTitle: t("results.decision_tree_title"),
+                          letterTitle: t("results.tab_letter"),
+                          letterTone: t("letter.tone_label", { defaultValue: "语气" }),
+                          shinePoints: t("letter.shine_points", { defaultValue: "闪光点" }),
+                          chartTitle: t("results.tab_chart"),
+                          dimCareer: t("results.dim_career"),
+                          dimFinancial: t("results.dim_financial"),
+                          dimHealth: t("results.dim_health"),
+                          dimRelationship: t("results.dim_relationship"),
+                          dimSatisfaction: t("results.dim_satisfaction"),
+                        },
+                      },
+                      `results-${decision_id.slice(0, 8)}.pdf`,
+                    );
+                    const dir = await downloadDir();
+                    pushToast("info", t("results.export_done_downloads"), {
+                      label: t("results.open_downloads_folder"),
+                      onClick: () => { void openPathInExplorer(dir); },
+                    });
+                  } catch (err) {
+                    pushToast("error", t("errors.generic", { detail: String(err) }));
+                  }
+                }}
+              >
+                PDF
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -248,17 +275,18 @@ export default function ResultsPage() {
         <DecisionTree tree={decision_tree!} />
       )}
 
-      {hasTree && (
-        <div className="results-export-snapshot opacity-0 absolute pointer-events-none" aria-hidden>
-          <DecisionTree tree={decision_tree!} />
-        </div>
-      )}
-
       {activeTab === "chart" && hasChart && (
         <LifeChart timelines={timelines} />
       )}
 
       {activeTab === "letter" && letter && <FutureLetter letter={letter} />}
+
+      {/* Off-screen render for PDF export — decision tree SVG must exist in DOM */}
+      {hasTree && activeTab !== "tree" && (
+        <div className="fixed -left-[9999px] top-0 pointer-events-none" aria-hidden>
+          <DecisionTree tree={decision_tree!} />
+        </div>
+      )}
 
       <FeedbackButtons
         decisionId={decision_id}
