@@ -40,9 +40,24 @@ def main():
         str(entry),
     ]
 
-    print(f"执行打包: {' '.join(cmd)}")
+    _print_status(f"执行打包: {' '.join(cmd)}")
     subprocess.run(cmd, check=True, cwd=str(root))
-    print(f"打包完成: {dist_dir / f'another-me-worker-{target_triple}'}{suffix}")
+    _print_status(f"打包完成: {dist_dir / f'another-me-worker-{target_triple}'}{suffix}")
+
+
+def _print_status(message: str) -> None:
+    """Print status text without assuming the console supports UTF-8."""
+    text = f"{message}\n"
+    stream = sys.stdout
+    encoding = getattr(stream, "encoding", None) or "utf-8"
+
+    if hasattr(stream, "buffer"):
+        stream.buffer.write(text.encode(encoding, errors="backslashreplace"))
+        stream.buffer.flush()
+        return
+
+    stream.write(text.encode(encoding, errors="backslashreplace").decode(encoding))
+    stream.flush()
 
 
 def _detect_target_triple() -> str:
