@@ -59,6 +59,15 @@ pub fn init() {
 }
 
 fn dirs_log_path() -> PathBuf {
+    // 便携模式：日志存放在可执行文件旁的 logs/ 目录
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            let log_dir = exe_dir.join("logs");
+            let _ = std::fs::create_dir_all(&log_dir);
+            return log_dir;
+        }
+    }
+    // 回退：仅当无法获取 exe 路径时
     let base = dirs::data_local_dir()
         .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
     let log_dir = base.join("another-me").join("logs");

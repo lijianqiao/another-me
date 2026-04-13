@@ -44,7 +44,18 @@ impl Databases {
     }
 }
 
+/// 便携模式：数据存放在可执行文件旁的 `data/db/` 目录中。
 fn resolve_db_dir(app: &tauri::AppHandle) -> AppResult<PathBuf> {
+    // 1. 尝试便携模式：exe 所在目录 / data / db
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            let portable_dir = exe_dir.join("data").join("db");
+            info!(path = %portable_dir.display(), "使用便携模式数据目录");
+            return Ok(portable_dir);
+        }
+    }
+
+    // 2. 回退：Tauri 默认 app_data_dir（仅当无法获取 exe 路径时）
     let base = app
         .path()
         .app_data_dir()
@@ -89,6 +100,7 @@ fn seed_default_settings(conn: &Connection) -> AppResult<()> {
             ('black_swan_enabled', 'false'),
             ('safety_valve_enabled', 'true'),
             ('active_model_id', '"qwen3.5:4b"'),
+            ('active_provider', '"ollama"'),
             ('update_check_frequency', '"weekly"'),
             ('last_update_check', 'null'),
             ('audio_enabled', 'false'),

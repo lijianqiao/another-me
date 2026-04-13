@@ -12,6 +12,8 @@ pub struct AppSettings {
     pub black_swan_enabled: bool,
     pub safety_valve_enabled: bool,
     pub active_model_id: String,
+    /// 当前激活的 AI 提供商: "ollama" | "openai" | "anthropic" | "qwen" | "deepseek" | "gemini"
+    pub active_provider: String,
     pub update_check_frequency: String,
     #[serde(default)]
     pub last_update_check: Option<String>,
@@ -29,6 +31,7 @@ impl Default for AppSettings {
             black_swan_enabled: false,
             safety_valve_enabled: true,
             active_model_id: "qwen3.5:4b".to_string(),
+            active_provider: "ollama".to_string(),
             update_check_frequency: "weekly".to_string(),
             last_update_check: None,
             audio_enabled: false,
@@ -51,6 +54,8 @@ pub struct AppSettingsPatch {
     pub safety_valve_enabled: Option<bool>,
     #[serde(default)]
     pub active_model_id: Option<String>,
+    #[serde(default)]
+    pub active_provider: Option<String>,
     #[serde(default)]
     pub update_check_frequency: Option<String>,
     #[serde(default)]

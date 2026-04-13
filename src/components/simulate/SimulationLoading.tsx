@@ -8,11 +8,12 @@ import { useTranslation } from "react-i18next";
 interface ProgressPayload {
   current: number;
   total: number;
+  run_total: number;
   stage?: string;
   message: string;
 }
 
-const KNOWN_STAGES = new Set(["preparing", "running", "clustering"]);
+const KNOWN_STAGES = new Set(["preparing", "running", "clustering", "letter", "saving"]);
 
 export default function SimulationLoading() {
   const { t } = useTranslation();
@@ -52,6 +53,7 @@ export default function SimulationLoading() {
     message = t(`simulate.stage_${progress.stage}`, {
       current: progress.current,
       total: progress.total,
+      run_total: progress.run_total,
     });
   } else if (progress?.message) {
     message = progress.message;

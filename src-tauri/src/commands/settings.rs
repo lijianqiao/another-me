@@ -131,6 +131,15 @@ pub async fn switch_provider(
     let provider = parse_provider(&input.provider)?;
 
     if provider == AIProvider::Ollama {
+        // 持久化 provider + model
+        {
+            let conn = state.db.settings.lock().await;
+            settings_store::apply_patch(&conn, &AppSettingsPatch {
+                active_provider: Some("ollama".to_string()),
+                active_model_id: Some(input.model.clone()),
+                ..Default::default()
+            }).map_err(|e| e.to_string())?;
+        }
         let mut gw = state.ai_gateway.write().await;
         gw.set_provider(AIProvider::Ollama);
         gw.set_ollama_model(input.model.clone());
@@ -159,6 +168,16 @@ pub async fn switch_provider(
 
     if base_url.is_none() {
         return Err("请先在模型管理页填写该提供商的 API Base URL".into());
+    }
+
+    // 持���化 provider + model
+    {
+        let conn = state.db.settings.lock().await;
+        settings_store::apply_patch(&conn, &AppSettingsPatch {
+            active_provider: Some(input.provider.clone()),
+            active_model_id: Some(input.model.clone()),
+            ..Default::default()
+        }).map_err(|e| e.to_string())?;
     }
 
     let mut gw = state.ai_gateway.write().await;

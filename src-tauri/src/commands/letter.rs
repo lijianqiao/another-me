@@ -5,13 +5,16 @@
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, info};
+use tracing::{info, warn};
 
 use crate::ai::gateway::AIGateway;
 use crate::engines::safety_valve;
 use crate::types::emotion::EmotionDimensions;
 use crate::types::error::AppError;
 use crate::types::profile::UserProfile;
+
+/// 来信生成的最大等待时间（秒）
+const LETTER_TIMEOUT_SECS: u64 = 90;
 
 /// 来信结果
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -66,11 +69,28 @@ pub async fn generate_letter(
          请直接输出纯文本信件内容，不要输出 JSON。"
     );
 
-    info!(tone = %tone, years = years_later, "生成未来来信");
+    info!(tone = %tone, years = years_later, "开始生成未来来信");
 
-    let gw = gateway.read().await;
-    let raw = gw.call(&system_prompt, &user_prompt, 0.7).await?;
-    debug!(len = raw.len(), "来信生成完成");
+    let raw =
+        match tokio::time::timeout(std::time::Duration::from_secs(LETTER_TIMEOUT_SECS), async {
+            let gw = gateway.read().await;
+            gw.call(&system_prompt, &user_prompt, 0.7, false).await
+        })
+        .await
+        {
+            Ok(Ok(r)) => r,
+            Ok(Err(e)) => {
+                warn!(error = %e, "来信 LLM 调用失败");
+                return Err(e);
+            }
+            Err(_) => {
+                warn!(timeout_secs = LETTER_TIMEOUT_SECS, "来信生成超时");
+                return Err(AppError::AiGateway(format!(
+                    "来信生成超时（{LETTER_TIMEOUT_SECS}s）"
+                )));
+            }
+        };
+    info!(len = raw.len(), "来信生成完成");
 
     // 清理可能的 JSON 包装
     let content = clean_letter_content(&raw);

@@ -64,6 +64,11 @@ pub fn get_all(conn: &Connection) -> AppResult<AppSettings> {
             settings.active_model_id = s.to_string();
         }
     }
+    if let Some(v) = read_value(conn, "active_provider")? {
+        if let Some(s) = v.as_str() {
+            settings.active_provider = s.to_string();
+        }
+    }
     if let Some(v) = read_value(conn, "update_check_frequency")? {
         if let Some(s) = v.as_str() {
             settings.update_check_frequency = s.to_string();
@@ -105,6 +110,9 @@ pub fn apply_patch(conn: &Connection, patch: &AppSettingsPatch) -> AppResult<()>
     }
     if let Some(v) = &patch.active_model_id {
         write_value(conn, "active_model_id", &json!(v))?;
+    }
+    if let Some(v) = &patch.active_provider {
+        write_value(conn, "active_provider", &json!(v))?;
     }
     if let Some(v) = &patch.update_check_frequency {
         write_value(conn, "update_check_frequency", &json!(v))?;

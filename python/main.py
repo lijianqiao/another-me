@@ -6,9 +6,24 @@
 @Docs: Python Worker 入口 — stdin/stdout JSON 协议
 """
 
-import sys
 import json
+import sys
 import traceback
+
+
+def configure_stdio() -> None:
+    """强制 stdin/stdout/stderr 使用 UTF-8，避免 Windows 管道默认本地编码。"""
+    for stream_name in ("stdin", "stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if stream is not None and hasattr(stream, "reconfigure"):
+            if stream_name != "stdin":
+                stream.reconfigure(
+                    encoding="utf-8",
+                    errors="strict",
+                    line_buffering=True,
+                )
+            else:
+                stream.reconfigure(encoding="utf-8", errors="strict")
 
 
 def read_request() -> dict:
@@ -29,6 +44,8 @@ def main():
     主事件循环：持久化运行，每次读一行 JSON，分发到对应 handler，返回 JSON 结果。
     Rust 端通过 stdin/stdout 与此进程通信。
     """
+    configure_stdio()
+
     handlers = {
         "ping": ping_handler,
         "check_realism": check_realism_handler,
@@ -45,26 +62,16 @@ def main():
             payload = request.get("payload", {})
 
             if cmd not in handlers:
-                write_response({
-                    "success": False,
-                    "error": f"未知命令: {cmd}"
-                })
+                write_response({"success": False, "error": f"未知命令: {cmd}"})
                 continue
 
             result = handlers[cmd](payload)
             write_response({"success": True, "result": result})
 
         except json.JSONDecodeError as e:
-            write_response({
-                "success": False,
-                "error": f"JSON 解析失败: {e}"
-            })
+            write_response({"success": False, "error": f"JSON 解析失败: {e}"})
         except Exception as e:
-            write_response({
-                "success": False,
-                "error": f"{type(e).__name__}: {e}",
-                "traceback": traceback.format_exc()
-            })
+            write_response({"success": False, "error": f"{type(e).__name__}: {e}", "traceback": traceback.format_exc()})
 
 
 def ping_handler(_payload: dict) -> dict:
@@ -75,6 +82,7 @@ def ping_handler(_payload: dict) -> dict:
 def check_realism_handler(payload: dict) -> dict:
     """现实主义因子检查"""
     from another_me.nlp.realism_factor import check_realism
+
     narrative = payload["narrative"]
     return check_realism(narrative)
 
@@ -82,6 +90,7 @@ def check_realism_handler(payload: dict) -> dict:
 def cluster_narratives_handler(payload: dict) -> dict:
     """TF-IDF 文本聚类（Sprint 5 实现，此处预留接口）"""
     from another_me.nlp.clustering import cluster_narratives_tfidf
+
     narratives = payload["narratives"]
     k = payload.get("k", 3)
     indices = cluster_narratives_tfidf(narratives, k)

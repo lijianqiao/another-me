@@ -148,6 +148,7 @@ export interface AppSettings {
   black_swan_enabled: boolean;
   safety_valve_enabled: boolean;
   active_model_id: string;
+  active_provider: string;
   update_check_frequency: string;
   last_update_check?: string | null;
   audio_enabled: boolean;
@@ -161,6 +162,7 @@ export interface AppSettingsPatch {
   black_swan_enabled?: boolean;
   safety_valve_enabled?: boolean;
   active_model_id?: string;
+  active_provider?: string;
   update_check_frequency?: string;
   audio_enabled?: boolean;
 }

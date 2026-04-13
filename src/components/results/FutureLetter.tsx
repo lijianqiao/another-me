@@ -119,25 +119,25 @@ export default function FutureLetter({ letter }: Props) {
             </div>
 
             {/* 称呼 */}
-            <p className="text-sm text-muted-foreground italic mb-6">{t("letter.greeting")}</p>
+            <p className="text-base text-foreground font-serif mb-6">{t("letter.greeting")}</p>
 
             {/* 正文 */}
-            <div className="text-[15px] leading-[2] text-foreground">
+            <div className="text-base leading-[2.2] text-foreground font-serif tracking-wide">
               {normalized.split("\n").map((line, i) => (
-                <p key={i} className={`m-0 mb-2 indent-8 ${line.trim() === "" ? "h-4" : ""}`}>
+                <p key={i} className={`m-0 mb-3 indent-8 ${line.trim() === "" ? "h-4" : ""}`}>
                   {line}
                 </p>
               ))}
             </div>
 
             {/* 落款 */}
-            <div className="mt-10 pt-6 border-t border-border/30 flex items-end justify-between">
-              <div className="text-sm text-muted-foreground italic">
-                <p className="m-0">{t("letter.closing")}</p>
-                <p className="m-0 mt-1 font-medium text-foreground">{t("letter.signature")}</p>
+            <div className="mt-12 pt-8 border-t border-border/30 flex items-end justify-between">
+              <div className="text-base text-foreground font-serif">
+                <p className="m-0 italic text-muted-foreground">{t("letter.closing")}</p>
+                <p className="m-0 mt-2 font-bold text-lg">{t("letter.signature")}</p>
               </div>
               <button
-                className="inline-flex items-center gap-1.5 border border-border bg-background text-muted-foreground cursor-pointer text-xs px-3 py-1.5 rounded-md transition-colors hover:bg-secondary hover:text-foreground"
+                className="inline-flex items-center gap-1.5 border border-border bg-background text-muted-foreground cursor-pointer text-xs px-3 py-1.5 rounded-md transition-colors hover:bg-secondary hover:text-foreground font-sans"
                 onClick={handleCopy}
                 title={t("letter.copy")}
               >

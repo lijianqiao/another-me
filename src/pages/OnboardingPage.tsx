@@ -44,6 +44,14 @@ function InputSection({ label, required, children }: InputSectionProps) {
   );
 }
 
+/** 将逗号/中文逗号/空格分隔的输入拆为非空字符串数组 */
+function split(input: string): string[] {
+  return input
+    .split(/[,，、\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 const TOTAL_STEPS = 4;
 
 export default function OnboardingPage() {
@@ -116,9 +124,8 @@ export default function OnboardingPage() {
         {Array.from({ length: TOTAL_STEPS }, (_, i) => (
           <div
             key={i}
-            className={`h-2 flex-1 max-w-[60px] rounded-full transition-colors duration-300 ${
-              i <= step ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.3)]" : "bg-muted"
-            }`}
+            className={`h-2 flex-1 max-w-[60px] rounded-full transition-colors duration-300 ${i <= step ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.3)]" : "bg-muted"
+              }`}
           />
         ))}
       </div>
@@ -303,10 +310,4 @@ export default function OnboardingPage() {
   );
 }
 
-function split(raw: string): string[] {
-  return raw
-    .split(/[,，、]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 

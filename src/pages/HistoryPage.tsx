@@ -48,16 +48,21 @@ export default function HistoryPage() {
   const handleSelect = async (id: string) => {
     try {
       const detail = await getDecision(id);
+      const r = detail.result;
       setHistoricalResult({
-        decision_id: detail.result.decision_id,
-        timelines: detail.result.timelines,
-        letter: detail.result.letter
-          ? { content: detail.result.letter, tone_type: "reflective", shine_points: [] }
+        decision_id: r.decision_id,
+        timelines: r.timelines,
+        letter: r.letter
+          ? {
+            content: r.letter,
+            tone_type: r.letter_tone_type || "reflective",
+            shine_points: r.letter_shine_points || [],
+          }
           : null,
-        dark_content_warning: false,
-        emotional_recovery_needed: false,
-        shine_points: [],
-        decision_tree: detail.result.decision_tree ?? undefined,
+        dark_content_warning: r.dark_content_warning ?? false,
+        emotional_recovery_needed: r.emotional_recovery_needed ?? false,
+        shine_points: r.shine_points ?? [],
+        decision_tree: r.decision_tree ?? undefined,
       });
       navigate("/results");
     } catch (err) {

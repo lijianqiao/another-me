@@ -36,7 +36,7 @@ export default function ResultsPage() {
   const [darkConfirmed, setDarkConfirmed] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("timelines");
   const [isAnchored, setIsAnchored] = useState(false);
-  const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false);      
+  const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false);
   const [correctionFeedbackId, setCorrectionFeedbackId] = useState("");
   const [corrections, setCorrections] = useState<ProfileCorrectionSuggestion[]>([]);
 
@@ -48,9 +48,13 @@ export default function ResultsPage() {
           setIsAnchored(anchoredId === result.decision_id);
         }
       })
-      .catch(() => { });
+      .catch((err) => {
+        if (!cancelled) {
+          pushToast("warning", t("errors.generic", { detail: String(err) }));
+        }
+      });
     return () => { cancelled = true; };
-  }, [result]);
+  }, [result, pushToast, t]);
 
   if (!result) {
     return (
@@ -77,7 +81,7 @@ export default function ResultsPage() {
 
   const showDarkDialog = dark_content_warning && !darkConfirmed;
   const hasTree = !!decision_tree;
-  const hasChart = timelines.some((tl) => tl.dimension_scores.length > 0);      
+  const hasChart = timelines.some((tl) => tl.dimension_scores.length > 0);
 
   const handleToggleAnchor = async () => {
     try {
@@ -122,7 +126,7 @@ export default function ResultsPage() {
               ? `📌 ${t("results.anchored")}`
               : `📌 ${t("results.set_anchor")}`}
           </button>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -172,7 +176,7 @@ export default function ResultsPage() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           <button
             className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 transition-colors"
             onClick={() => {
@@ -254,7 +258,7 @@ export default function ResultsPage() {
         <LifeChart timelines={timelines} />
       )}
 
-      {activeTab === "letter" && letter && <FutureLetter letter={letter} />}    
+      {activeTab === "letter" && letter && <FutureLetter letter={letter} />}
 
       <FeedbackButtons
         decisionId={decision_id}

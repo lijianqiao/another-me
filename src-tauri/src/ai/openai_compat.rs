@@ -13,7 +13,8 @@ struct ChatRequest<'a> {
     model: &'a str,
     messages: Vec<Message<'a>>,
     temperature: f32,
-    response_format: ResponseFormat,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_format: Option<ResponseFormat>,
 }
 
 #[derive(Serialize)]
@@ -51,10 +52,11 @@ pub async fn call_openai_compat(
     user_prompt: &str,
     temperature: f32,
     provider_label: &str,
+    json_mode: bool,
 ) -> Result<String, AppError> {
     let base = base_url.trim().trim_end_matches('/');
     let url = format!("{base}/chat/completions");
-    debug!(model = %model, provider = %provider_label, "调用 OpenAI 兼容 API");
+    debug!(model = %model, provider = %provider_label, json_mode = json_mode, "调用 OpenAI 兼容 API");
 
     let request = ChatRequest {
         model,
@@ -63,7 +65,11 @@ pub async fn call_openai_compat(
             Message { role: "user", content: user_prompt },
         ],
         temperature,
-        response_format: ResponseFormat { r#type: "json_object".to_string() },
+        response_format: if json_mode {
+            Some(ResponseFormat { r#type: "json_object".to_string() })
+        } else {
+            None
+        },
     };
 
     let resp = client

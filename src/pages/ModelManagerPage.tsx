@@ -50,7 +50,7 @@ const CLOUD_PROVIDERS = [
   {
     id: "gemini",
     label: "Google Gemini",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.1-flash",
     defaultBase: "https://generativelanguage.googleapis.com",
   },
 ] as const;
@@ -192,9 +192,9 @@ export default function ModelManagerPage() {
   };
 
   return (
-    <section className="space-y-8 p-6 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <section className="max-w-2xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
       <h2 className="text-2xl font-bold tracking-tight">{t("models.title")}</h2>
-      <p className="text-muted-foreground mb-6">{t("models.subtitle")}</p>
+      <p className="text-sm text-muted-foreground mt-1 mb-6">{t("models.subtitle")}</p>
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -207,281 +207,250 @@ export default function ModelManagerPage() {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      <div className="bg-card border border-border p-6 rounded-lg space-y-4 mb-8">
-        <h3 className="text-lg font-semibold tracking-tight">{t("models.download_title")}</h3>
-        <div className="flex gap-3">
-          <input
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            type="text"
-            placeholder={t("models.download_placeholder")}
-            value={newModelId}
-            onChange={(e) => setNewModelId(e.target.value)}
-            disabled={downloading}
-          />
-          <button
-            className="h-10 px-5 py-2 inline-flex items-center justify-center whitespace-nowrap shrink-0 rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={handleDownload}
-            disabled={downloading || !newModelId.trim()}
-          >
-            {downloading ? t("models.downloading") : t("models.download_btn")}
-          </button>
-        </div>
-      </div>
-
       <div className="space-y-4">
-        {loading && <p>{t("common.loading")}</p>}
-        {!loading && models.length === 0 && (
-          <p className="text-center text-muted-foreground py-8">{t("models.empty")}</p>
-        )}
-        {models.map((m) => (
-          <div
-            key={m.name}
-            className={`bg-card border p-5 rounded-lg flex flex-col gap-4 sm:flex-row sm:items-center justify-between transition-colors ${m.is_active ? "border-primary/50 bg-primary/5" : ""}`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="font-medium">{m.name}</span>
-              <span className="text-sm text-muted-foreground">{m.size}</span>
-              {m.is_active && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 text-primary uppercase font-bold tracking-wider">{t("models.active")}</span>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {!m.is_active && (
-                <button
-                  className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
-                  onClick={() => handleSwitch(m.name)}
-                >
-                  {t("models.use")}
-                </button>
-              )}
-              <button
-                className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors text-destructive hover:bg-destructive/10 border border-destructive/20"
-                onClick={() => setDeleteTarget(m.name)}
-              >
-                {t("models.delete")}
-              </button>
-            </div>
+        {/* 下载新模型 */}
+        <div className="bg-card border border-border rounded-xl p-4">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t("models.download_title")}</h3>
+          <div className="flex gap-2">
+            <input
+              className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              type="text"
+              placeholder={t("models.download_placeholder")}
+              value={newModelId}
+              onChange={(e) => setNewModelId(e.target.value)}
+              disabled={downloading}
+            />
+            <button
+              className="h-8 px-4 inline-flex items-center justify-center whitespace-nowrap shrink-0 rounded-md text-xs font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              onClick={handleDownload}
+              disabled={downloading || !newModelId.trim()}
+            >
+              {downloading ? t("models.downloading") : t("models.download_btn")}
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="space-y-6 pt-8 border-t border-border mt-8">
-        <h3 className="text-xl font-semibold tracking-tight">{t("settings.cloud_title")}</h3>
-        <p className="text-muted-foreground text-sm">{t("models.cloud_desc")}</p>
-
-        <div className="grid gap-4 mt-4">
-          {CLOUD_PROVIDERS.map((cp) => {
-            const status = cloudStatuses.find((k) => k.provider === cp.id);
-            const hasKey = status?.has_key ?? false;
-            const isEditing = editingProvider === cp.id;
-            const inp = cloudInputs[cp.id] ?? {
-              model: cp.defaultModel,
-              baseUrl: cp.defaultBase,
-            };
-
-            return (
-              <div key={cp.id} className="bg-card border border-border p-5 rounded-lg space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-semibold text-lg">{cp.label}</span>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                      hasKey
-                        ? "bg-green-500/15 text-green-600 dark:text-green-400"
-                        : "bg-muted text-muted-foreground"
-                    }`}
+        {/* 本地模型列表 */}
+        <div className="bg-card border border-border rounded-xl divide-y divide-border">
+          {loading && (
+            <p className="p-4 text-sm text-muted-foreground">{t("common.loading")}</p>
+          )}
+          {!loading && models.length === 0 && (
+            <p className="p-6 text-center text-sm text-muted-foreground">{t("models.empty")}</p>
+          )}
+          {models.map((m) => (
+            <div
+              key={m.name}
+              className={`flex items-center justify-between gap-3 px-4 py-3 ${m.is_active ? "bg-primary/5" : ""}`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm font-medium truncate">{m.name}</span>
+                <span className="text-xs text-muted-foreground shrink-0">{m.size}</span>
+                {m.is_active && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary uppercase font-bold tracking-wider shrink-0">{t("models.active")}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {!m.is_active && (
+                  <button
+                    className="h-7 px-3 inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-accent border border-input bg-background"
+                    onClick={() => handleSwitch(m.name)}
                   >
-                    {hasKey
-                      ? t("settings.key_configured")
-                      : t("settings.key_not_set")}
-                  </span>
-                </div>
+                    {t("models.use")}
+                  </button>
+                )}
+                <button
+                  className="h-7 px-3 inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors text-destructive hover:bg-destructive/10 border border-destructive/20"
+                  onClick={() => setDeleteTarget(m.name)}
+                >
+                  {t("models.delete")}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
 
-                <label className="space-y-1.5 flex flex-col text-sm font-medium">
-                  <span>{t("models.base_url")}</span>
-                  <input
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    type="url"
-                    placeholder={cp.defaultBase}
-                    value={inp.baseUrl}
-                    onChange={(e) => setInput(cp.id, "baseUrl", e.target.value)}
-                  />
-                </label>
+        {/* 云端 API */}
+        <div className="pt-2">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1">{t("settings.cloud_title")}</h3>
+          <p className="text-xs text-muted-foreground mb-3">{t("models.cloud_desc")}</p>
 
-                <label className="space-y-1.5 flex flex-col text-sm font-medium">
-                  <span>{t("models.cloud_model_id")}</span>
-                  <input
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    type="text"
-                    placeholder={cp.defaultModel}
-                    value={inp.model}
-                    onChange={(e) => setInput(cp.id, "model", e.target.value)}
-                  />
-                </label>
+          <div className="space-y-3">
+            {CLOUD_PROVIDERS.map((cp) => {
+              const status = cloudStatuses.find((k) => k.provider === cp.id);
+              const hasKey = status?.has_key ?? false;
+              const isEditing = editingProvider === cp.id;
+              const inp = cloudInputs[cp.id] ?? {
+                model: cp.defaultModel,
+                baseUrl: cp.defaultBase,
+              };
 
-                {isEditing ? (
-                  <div className="space-y-4 mt-4 pt-4 border-t border-border">
-                    <input
-                      type="password"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder={t("models.api_key_placeholder")}
-                      value={keyInput}
-                      onChange={(e) => setKeyInput(e.target.value)}
-                    />
-                    <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
-                      <button
-                        className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
-                        disabled={!keyInput.trim()}
-                        onClick={async () => {
-                          if (!inp.baseUrl.trim()) {
-                            pushToast("warning", t("models.base_url_required"));
-                            return;
-                          }
-                          try {
-                            await saveCloudProvider({
-                              provider: cp.id,
-                              api_key: keyInput.trim(),
-                              base_url: inp.baseUrl.trim() || undefined,
-                            });
-                            pushToast("info", t("settings.key_saved"));
-                            setEditingProvider(null);
-                            setKeyInput("");
-                            void loadCloud();
-                          } catch (err) {
-                            pushToast(
-                              "error",
-                              t("errors.generic", { detail: String(err) }),
-                            );
-                          }
-                        }}
-                      >
-                        {t("common.save")}
-                      </button>
-                      <button
-                        className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
-                        onClick={() => {
-                          setEditingProvider(null);
-                          setKeyInput("");
-                        }}
-                      >
-                        {t("common.cancel")}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
-                    <button
-                      className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
-                      onClick={() => {
-                        setEditingProvider(cp.id);
-                        setKeyInput("");
-                      }}
+              return (
+                <div key={cp.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold">{cp.label}</span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${hasKey
+                          ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                          : "bg-muted text-muted-foreground"
+                        }`}
                     >
-                      {hasKey
-                        ? t("settings.key_update")
-                        : t("settings.key_set")}
-                    </button>
-                    {hasKey && (
-                      <>
+                      {hasKey ? t("settings.key_configured") : t("settings.key_not_set")}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <label className="space-y-1">
+                      <span className="text-[11px] text-muted-foreground">{t("models.base_url")}</span>
+                      <input
+                        className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        type="url"
+                        placeholder={cp.defaultBase}
+                        value={inp.baseUrl}
+                        onChange={(e) => setInput(cp.id, "baseUrl", e.target.value)}
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-[11px] text-muted-foreground">{t("models.cloud_model_id")}</span>
+                      <input
+                        className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        type="text"
+                        placeholder={cp.defaultModel}
+                        value={inp.model}
+                        onChange={(e) => setInput(cp.id, "model", e.target.value)}
+                      />
+                    </label>
+                  </div>
+
+                  {isEditing ? (
+                    <div className="space-y-2 pt-2 border-t border-border">
+                      <input
+                        type="password"
+                        className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        placeholder={t("models.api_key_placeholder")}
+                        value={keyInput}
+                        onChange={(e) => setKeyInput(e.target.value)}
+                      />
+                      <div className="flex items-center gap-1.5">
                         <button
-                          className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
-                          onClick={async () => {
-                            try {
-                              await saveCloudProvider({
-                                provider: cp.id,
-                                base_url: inp.baseUrl.trim() || undefined,
-                              });
-                              pushToast("info", t("models.base_url_saved"));
-                              void loadCloud();
-                            } catch (err) {
-                              pushToast(
-                                "error",
-                                t("errors.generic", { detail: String(err) }),
-                              );
-                            }
-                          }}
-                        >
-                          {t("models.save_base_url")}
-                        </button>
-                        <button
-                          className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors text-destructive hover:bg-destructive/10 border border-destructive/20"
-                          onClick={async () => {
-                            try {
-                              await deleteApiKey(cp.id);
-                              pushToast("info", t("settings.key_deleted"));
-                              void loadCloud();
-                            } catch (err) {
-                              pushToast(
-                                "error",
-                                t("errors.generic", { detail: String(err) }),
-                              );
-                            }
-                          }}
-                        >
-                          {t("models.delete")}
-                        </button>
-                        <button
-                          className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+                          className="h-7 px-3 inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                          disabled={!keyInput.trim()}
                           onClick={async () => {
                             if (!inp.baseUrl.trim()) {
                               pushToast("warning", t("models.base_url_required"));
                               return;
                             }
                             try {
-                              await switchProvider({
+                              await saveCloudProvider({
                                 provider: cp.id,
-                                model: inp.model.trim() || cp.defaultModel,
-                                base_url: inp.baseUrl.trim(),
+                                api_key: keyInput.trim(),
+                                base_url: inp.baseUrl.trim() || undefined,
                               });
-                              setActiveProvider(cp.id);
-                              pushToast(
-                                "info",
-                                t("settings.provider_switched", {
-                                  provider: cp.label,
-                                }),
-                              );
+                              pushToast("info", t("settings.key_saved"));
+                              setEditingProvider(null);
+                              setKeyInput("");
+                              void loadCloud();
                             } catch (err) {
-                              pushToast(
-                                "error",
-                                t("errors.generic", { detail: String(err) }),
-                              );
+                              pushToast("error", t("errors.generic", { detail: String(err) }));
                             }
                           }}
                         >
-                          {activeProvider === cp.id
-                            ? t("models.active")
-                            : t("models.use")}
+                          {t("common.save")}
                         </button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                        <button
+                          className="h-7 px-3 inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-accent border border-input bg-background"
+                          onClick={() => { setEditingProvider(null); setKeyInput(""); }}
+                        >
+                          {t("common.cancel")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border">
+                      <button
+                        className="h-7 px-3 inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-accent border border-input bg-background"
+                        onClick={() => { setEditingProvider(cp.id); setKeyInput(""); }}
+                      >
+                        {hasKey ? t("settings.key_update") : t("settings.key_set")}
+                      </button>
+                      {hasKey && (
+                        <>
+                          <button
+                            className="h-7 px-3 inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-accent border border-input bg-background"
+                            onClick={async () => {
+                              try {
+                                await saveCloudProvider({ provider: cp.id, base_url: inp.baseUrl.trim() || undefined });
+                                pushToast("info", t("models.base_url_saved"));
+                                void loadCloud();
+                              } catch (err) {
+                                pushToast("error", t("errors.generic", { detail: String(err) }));
+                              }
+                            }}
+                          >
+                            {t("models.save_base_url")}
+                          </button>
+                          <button
+                            className="h-7 px-3 inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors text-destructive hover:bg-destructive/10 border border-destructive/20"
+                            onClick={async () => {
+                              try {
+                                await deleteApiKey(cp.id);
+                                pushToast("info", t("settings.key_deleted"));
+                                void loadCloud();
+                              } catch (err) {
+                                pushToast("error", t("errors.generic", { detail: String(err) }));
+                              }
+                            }}
+                          >
+                            {t("models.delete")}
+                          </button>
+                          <button
+                            className="h-7 px-3 inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+                            onClick={async () => {
+                              if (!inp.baseUrl.trim()) {
+                                pushToast("warning", t("models.base_url_required"));
+                                return;
+                              }
+                              try {
+                                await switchProvider({
+                                  provider: cp.id,
+                                  model: inp.model.trim() || cp.defaultModel,
+                                  base_url: inp.baseUrl.trim(),
+                                });
+                                setActiveProvider(cp.id);
+                                pushToast("info", t("settings.provider_switched", { provider: cp.label }));
+                              } catch (err) {
+                                pushToast("error", t("errors.generic", { detail: String(err) }));
+                              }
+                            }}
+                          >
+                            {activeProvider === cp.id ? t("models.active") : t("models.use")}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-        {activeProvider !== "ollama" && (
-          <button
-            className="h-9 px-4 py-2 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent border border-input bg-background"
-            onClick={async () => {
-              try {
-                await switchProvider({
-                  provider: "ollama",
-                  model: activeModelId,
-                });
-                setActiveProvider("ollama");
-                pushToast("info", t("settings.back_to_ollama"));
-              } catch (err) {
-                pushToast(
-                  "error",
-                  t("errors.generic", { detail: String(err) }),
-                );
-              }
-            }}
-          >
-            {t("settings.back_to_ollama")}
-          </button>
-        )}
+          {activeProvider !== "ollama" && (
+            <button
+              className="mt-3 h-7 px-3 inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-accent border border-input bg-background"
+              onClick={async () => {
+                try {
+                  await switchProvider({ provider: "ollama", model: activeModelId });
+                  setActiveProvider("ollama");
+                  pushToast("info", t("settings.back_to_ollama"));
+                } catch (err) {
+                  pushToast("error", t("errors.generic", { detail: String(err) }));
+                }
+              }}
+            >
+              {t("settings.back_to_ollama")}
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );

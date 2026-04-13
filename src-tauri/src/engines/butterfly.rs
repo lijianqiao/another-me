@@ -16,9 +16,7 @@ use tauri::Emitter;
 use tokio::sync::{RwLock, Semaphore};
 use tracing::{debug, info, warn};
 
-use crate::ai::gateway::{
-    build_profile_summary, format_user_context, AIGateway, UserContextBlock,
-};
+use crate::ai::gateway::{build_profile_summary, format_user_context, AIGateway, UserContextBlock};
 use crate::engines::perturbation::PerturbationFactors;
 use crate::python::subprocess_bridge::{PythonBridge, PythonWorkerManager};
 use crate::types::emotion::EmotionDimensions;
@@ -73,8 +71,10 @@ impl Default for ButterflyEngineConfig {
 pub struct SimulationProgress {
     pub current: usize,
     pub total: usize,
+    /// LLM 推演次数（仅 stage=running 时前端用于显示 "X/run_total 种可能"）
+    pub run_total: usize,
     /// 阶段标识符，前端用于 i18n 映射：
-    /// "preparing" | "running" | "clustering"
+    /// "preparing" | "running" | "clustering" | "letter" | "saving"
     pub stage: String,
     /// 兼容字段：便于前端在 i18n 缺失时直接展示
     pub message: String,
@@ -117,10 +117,7 @@ impl ButterflyEngine {
         self
     }
 
-    pub fn with_python_worker(
-        mut self,
-        worker: Arc<PythonWorkerManager>,
-    ) -> Self {
+    pub fn with_python_worker(mut self, worker: Arc<PythonWorkerManager>) -> Self {
         self.python_worker = Some(worker);
         self
     }
@@ -167,22 +164,19 @@ impl ButterflyEngine {
 
         let gateway = self.ai_gateway.read().await;
         let raw_response = gateway
-            .call(&system_prompt, &user_prompt, temperature)
+            .call(&system_prompt, &user_prompt, temperature, true)
             .await?;
 
         debug!(len = raw_response.len(), "收到 LLM 原始响应");
 
-        let candidate: SimulationCandidate =
-            serde_json::from_str(&raw_response).map_err(|e| {
-                warn!(
-                    error = %e,
-                    response = &raw_response[..raw_response.len().min(500)],
-                    "LLM JSON 解析失败"
-                );
-                AppError::AiGateway(format!(
-                    "LLM 返回的 JSON 格式不正确: {e}"
-                ))
-            })?;
+        let candidate: SimulationCandidate = serde_json::from_str(&raw_response).map_err(|e| {
+            warn!(
+                error = %e,
+                response = &raw_response[..raw_response.len().min(500)],
+                "LLM JSON 解析失败"
+            );
+            AppError::AiGateway(format!("LLM 返回的 JSON 格式不正确: {e}"))
+        })?;
 
         info!("单次推演完成");
         Ok(candidate)
@@ -211,35 +205,41 @@ impl ButterflyEngine {
         context: Option<&str>,
         user_context: &UserContextBlock,
         app_handle: &tauri::AppHandle,
+        progress_total: usize,
     ) -> Result<Vec<SimulationCandidate>, AppError> {
-        let total = self.config.run_count;
-        info!(run_count = total, "开始批量推演");
+        let run_count = self.config.run_count;
+        info!(run_count = run_count, "开始批量推演");
 
         // Step 1: 通知前端 — 准备推演
-        emit_progress(app_handle, 0, total, "preparing", "正在准备推演...");
+        emit_progress(
+            app_handle,
+            0,
+            progress_total,
+            "preparing",
+            "正在准备推演...",
+        );
 
         // Step 2: 生成扰动因子 + Prompt + Temperature
-        let runs: Vec<(String, String, f32, PerturbationFactors)> =
-            (0..total)
-                .map(|i| {
-                    let perturbation = PerturbationFactors::generate(
-                        i,
-                        self.config.black_swan_enabled,
-                        self.config.black_swan_probability,
-                    );
-                    let temperature = drama_to_temperature(drama_level);
-                    let (sys_p, usr_p) = build_simulation_prompts(
-                        profile,
-                        decision_text,
-                        time_horizon,
-                        drama_level,
-                        context,
-                        user_context,
-                        &perturbation,
-                    );
-                    (sys_p, usr_p, temperature, perturbation)
-                })
-                .collect();
+        let runs: Vec<(String, String, f32, PerturbationFactors)> = (0..run_count)
+            .map(|i| {
+                let perturbation = PerturbationFactors::generate(
+                    i,
+                    self.config.black_swan_enabled,
+                    self.config.black_swan_probability,
+                );
+                let temperature = drama_to_temperature(drama_level);
+                let (sys_p, usr_p) = build_simulation_prompts(
+                    profile,
+                    decision_text,
+                    time_horizon,
+                    drama_level,
+                    context,
+                    user_context,
+                    &perturbation,
+                );
+                (sys_p, usr_p, temperature, perturbation)
+            })
+            .collect();
 
         // Step 3: 受控并发执行推演（Semaphore 限流 + 重试）
         let semaphore = Arc::new(Semaphore::new(LLM_MAX_CONCURRENT));
@@ -247,15 +247,15 @@ impl ButterflyEngine {
         let max_notified = Arc::new(AtomicUsize::new(0));
 
         let mut handles = Vec::new();
-        for (i, (system_prompt, user_prompt, temperature, _perturb)) in
-            runs.into_iter().enumerate()
+        for (i, (system_prompt, user_prompt, temperature, _perturb)) in runs.into_iter().enumerate()
         {
             let gateway = self.ai_gateway.clone();
             let semaphore = semaphore.clone();
             let completed = completed.clone();
             let max_notified = max_notified.clone();
             let app_handle = app_handle.clone();
-            let run_total = total;
+            let run_total = run_count;
+            let task_progress_total = progress_total;
 
             handles.push(tokio::spawn(async move {
                 // 获取信号量许可 — 限制同时访问 Ollama 的请求数
@@ -271,35 +271,29 @@ impl ButterflyEngine {
 
                     let gw = gateway.read().await;
                     let result = gw
-                        .call(&system_prompt, &user_prompt, temperature)
+                        .call(&system_prompt, &user_prompt, temperature, true)
                         .await;
                     drop(gw);
 
                     match result {
                         Ok(raw) => {
                             // 更新计数 + 里程碑通知
-                            let done =
-                                completed.fetch_add(1, Ordering::SeqCst) + 1;
+                            let done = completed.fetch_add(1, Ordering::SeqCst) + 1;
                             if MILESTONES.contains(&done) {
-                                let prev = max_notified
-                                    .fetch_max(done, Ordering::SeqCst);
+                                let prev = max_notified.fetch_max(done, Ordering::SeqCst);
                                 if done > prev {
-                                    let msg = format!(
-                                        "正在推演第 {done}/{run_total} 种可能..."
-                                    );
+                                    let msg = format!("正在推演第 {done}/{run_total} 种可能...");
                                     emit_progress(
                                         &app_handle,
                                         done,
-                                        run_total,
+                                        task_progress_total,
                                         "running",
                                         &msg,
                                     );
                                 }
                             }
 
-                            match serde_json::from_str::<SimulationCandidate>(
-                                &raw,
-                            ) {
+                            match serde_json::from_str::<SimulationCandidate>(&raw) {
                                 Ok(candidate) => return Some(candidate),
                                 Err(e) => {
                                     warn!(
@@ -333,15 +327,8 @@ impl ButterflyEngine {
                 if MILESTONES.contains(&done) {
                     let prev = max_notified.fetch_max(done, Ordering::SeqCst);
                     if done > prev {
-                        let msg =
-                            format!("正在推演第 {done}/{run_total} 种可能...");
-                        emit_progress(
-                            &app_handle,
-                            done,
-                            run_total,
-                            "running",
-                            &msg,
-                        );
+                        let msg = format!("正在推演第 {done}/{run_total} 种可能...");
+                        emit_progress(&app_handle, done, task_progress_total, "running", &msg);
                     }
                 }
                 None
@@ -356,7 +343,7 @@ impl ButterflyEngine {
 
         info!(
             success = candidates.len(),
-            total = total,
+            total = run_count,
             "并发推演完成"
         );
 
@@ -369,16 +356,15 @@ impl ButterflyEngine {
         // Step 4: 通知前端 — 进入聚类阶段
         emit_progress(
             app_handle,
-            total,
-            total,
+            run_count + 1,
+            progress_total,
             "clustering",
             "正在归纳时间线...",
         );
 
         // Step 5: 现实主义校验（有 Python Worker 时才执行）
         if let Some(bridge) = self.get_bridge().await {
-            candidates =
-                self.apply_realism_checks(candidates, &bridge).await;
+            candidates = self.apply_realism_checks(candidates, &bridge).await;
         }
 
         // Step 6: 黑天鹅注入
@@ -422,8 +408,9 @@ impl ButterflyEngine {
         bridge: &Arc<PythonBridge>,
     ) -> Vec<SimulationCandidate> {
         let mut checked = Vec::with_capacity(candidates.len());
+        let mut remaining = candidates.into_iter();
 
-        for candidate in candidates {
+        while let Some(candidate) = remaining.next() {
             let payload = serde_json::json!({
                 "narrative": &candidate.narrative,
             });
@@ -439,18 +426,20 @@ impl ButterflyEngine {
                         debug!("叙事通过现实主义校验");
                         checked.push(candidate);
                     } else {
-                        info!(
-                            status = status,
-                            "叙事未通过现实主义校验，保留但降低优先级"
-                        );
+                        info!(status = status, "叙事未通过现实主义校验，保留但降低优先级");
                         // 仍然保留（不重试 LLM），标记为低优先级
                         // 放到列表末尾，聚类时自然被排除
                         checked.push(candidate);
                     }
                 }
                 Err(e) => {
-                    warn!(error = %e, "现实主义校验调用失败，跳过");
+                    warn!(error = %e, "现实主义校验调用失败，跳过剩余校验并重启 Worker");
+                    if let Some(ref worker) = self.python_worker {
+                        worker.invalidate().await;
+                    }
                     checked.push(candidate);
+                    checked.extend(remaining);
+                    break;
                 }
             }
         }
@@ -468,13 +457,11 @@ impl ButterflyEngine {
     ) -> Vec<SimulationCandidate> {
         for candidate in &mut candidates {
             if candidate.black_swan_event.is_none() {
-                let event =
-                    crate::utils::black_swan::pick_random_black_swan();
-                candidate.narrative =
-                    crate::utils::black_swan::inject_black_swan_into_narrative(
-                        &candidate.narrative,
-                        &event,
-                    );
+                let event = crate::utils::black_swan::pick_random_black_swan();
+                candidate.narrative = crate::utils::black_swan::inject_black_swan_into_narrative(
+                    &candidate.narrative,
+                    &event,
+                );
                 candidate.black_swan_event = Some(event);
             }
         }
@@ -498,8 +485,7 @@ impl ButterflyEngine {
             return Ok(candidates);
         }
 
-        let narratives: Vec<&str> =
-            candidates.iter().map(|c| c.narrative.as_str()).collect();
+        let narratives: Vec<&str> = candidates.iter().map(|c| c.narrative.as_str()).collect();
 
         let payload = serde_json::json!({
             "narratives": narratives,
@@ -515,9 +501,7 @@ impl ButterflyEngine {
         let result = bridge
             .call("cluster_narratives", payload)
             .await
-            .map_err(|e| {
-                AppError::PythonBridge(format!("聚类调用失败: {e}"))
-            })?;
+            .map_err(|e| AppError::PythonBridge(format!("聚类调用失败: {e}")))?;
 
         let indices: Vec<usize> = result
             .get("cluster_indices")
@@ -552,16 +536,19 @@ impl ButterflyEngine {
 // 进度通知
 // ============================================================================
 
-fn emit_progress(
+pub(crate) fn emit_progress(
     app_handle: &tauri::AppHandle,
     current: usize,
     total: usize,
     stage: &str,
     message: &str,
 ) {
+    // run_total = total 减去 3 个后处理步骤 (clustering + letter + saving)
+    let run_total = total.saturating_sub(3);
     let payload = SimulationProgress {
         current,
         total,
+        run_total,
         stage: stage.to_string(),
         message: message.to_string(),
     };

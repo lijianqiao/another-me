@@ -22,12 +22,13 @@ interface SimulationState {
   reset: () => void;
 }
 
-export const useSimulationStore = create<SimulationState>((set) => ({
+export const useSimulationStore = create<SimulationState>((set, get) => ({
   running: false,
   fullResult: null,
   error: null,
 
   startSimulation: async (input) => {
+    if (get().running) return;
     set({ running: true, error: null, fullResult: null });
     try {
       const result = await simulateDecision(input);

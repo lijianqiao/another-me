@@ -3,7 +3,7 @@ name = "another-me-worker"
 version = "0.1.0"
 description = "另一个我 — Python NLP Worker（现实主义因子 + TF-IDF 聚类）"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = "3.14"
 dependencies = [
     "snownlp>=0.12.3",
     "jieba>=0.42.1",

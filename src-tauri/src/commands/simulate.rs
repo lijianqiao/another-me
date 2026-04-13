@@ -12,9 +12,7 @@ use uuid::Uuid;
 use crate::ai::gateway::{build_profile_summary, UserContextBlock};
 use crate::commands::letter::{self, LetterResult};
 use crate::commands::AppState;
-use crate::engines::butterfly::{
-    ButterflyEngine, ButterflyEngineConfig, SimulationCandidate,
-};
+use crate::engines::butterfly::{ButterflyEngine, ButterflyEngineConfig, SimulationCandidate};
 use crate::engines::{causal_chain, safety_valve};
 use crate::storage::{decision_store, life_map_store, profile_store, settings_store};
 use crate::types::decision::{SimulateInput, SimulationResult};
@@ -43,28 +41,54 @@ pub async fn simulate_decision(
 ) -> Result<FullSimulationResult, String> {
     let t_start = Instant::now();
 
-    // 0. 从设置同步模型 ID 到 AI Gateway
+    // 0. 从设置同步 Provider + 模型 ID 到 AI Gateway
     {
         let conn = state.db.settings.lock().await;
-        let settings =
-            settings_store::get_all(&conn).map_err(|e| e.to_string())?;
-        info!(model = %settings.active_model_id, "同步模型设置到 AI Gateway");
+        let settings = settings_store::get_all(&conn).map_err(|e| e.to_string())?;
+
+        let provider = match settings.active_provider.as_str() {
+            "openai" => crate::ai::gateway::AIProvider::OpenAI,
+            "anthropic" => crate::ai::gateway::AIProvider::Anthropic,
+            "qwen" => crate::ai::gateway::AIProvider::Qwen,
+            "deepseek" => crate::ai::gateway::AIProvider::DeepSeek,
+            "gemini" => crate::ai::gateway::AIProvider::Gemini,
+            _ => crate::ai::gateway::AIProvider::Ollama,
+        };
+
         let mut gw = state.ai_gateway.write().await;
-        gw.set_ollama_model(settings.active_model_id);
+        gw.set_provider(provider);
+
+        if provider == crate::ai::gateway::AIProvider::Ollama {
+            gw.set_ollama_model(settings.active_model_id.clone());
+        } else {
+            // 云端 Provider: 从 credential_store 恢复配置
+            let api_key =
+                crate::storage::credential_store::get_api_key(&conn, &settings.active_provider)
+                    .map_err(|e| e.to_string())?
+                    .ok_or_else(|| format!("未设置 {} API Key", settings.active_provider))?;
+            let base_url =
+                crate::storage::credential_store::get_base_url(&conn, &settings.active_provider)
+                    .map_err(|e| e.to_string())?;
+            gw.set_cloud_config(crate::ai::gateway::CloudProviderConfig {
+                api_key,
+                model: settings.active_model_id.clone(),
+                base_url,
+            });
+        }
+        info!(provider = %settings.active_provider, model = %settings.active_model_id, "同步 Provider 设置到 AI Gateway");
     }
 
     // 1. 取画像
     let profile = {
         let conn = state.db.profiles.lock().await;
-        profile_store::get_current(&conn)?
-            .ok_or_else(|| AppError::ProfileNotFound.to_string())?
+        profile_store::get_current(&conn)?.ok_or_else(|| AppError::ProfileNotFound.to_string())?
     };
 
     // 2. 检查每日上限
     {
         let conn = state.db.decisions.lock().await;
-        let today_count = decision_store::get_today_count(&conn, &profile.id)
-            .map_err(|e| e.to_string())?;
+        let today_count =
+            decision_store::get_today_count(&conn, &profile.id).map_err(|e| e.to_string())?;
         if let Some(warning) = safety_valve::check_daily_limit(today_count) {
             return Err(format!("DAILY_LIMIT:{}", warning.message));
         }
@@ -113,6 +137,10 @@ pub async fn simulate_decision(
         .with_config(engine_config)
         .with_python_worker(state.python_worker.clone());
 
+    // progress_total = LLM runs + clustering + letter + saving
+    let run_count = 5usize;
+    let progress_total = run_count + 3;
+
     // 5. 执行批量推演（5 次并发 → 聚类 → 3 条候选）
     let t_llm_start = Instant::now();
     let candidates = engine
@@ -124,6 +152,7 @@ pub async fn simulate_decision(
             input.context.as_deref(),
             &user_context,
             &app_handle,
+            progress_total,
         )
         .await
         .map_err(|e| format!("[simulate_decision] {e}"))?;
@@ -154,26 +183,32 @@ pub async fn simulate_decision(
         .collect::<Vec<_>>()
         .join("\n");
 
-    let dark_content_warning =
-        safety_valve::check_dark_content(&combined_narrative);
+    let dark_content_warning = safety_valve::check_dark_content(&combined_narrative);
     let avg_emotion = average_emotions(&timelines);
-    let emotional_recovery_needed =
-        safety_valve::needs_emotional_recovery_test(&avg_emotion);
+    let emotional_recovery_needed = safety_valve::needs_emotional_recovery_test(&avg_emotion);
     let shine_points = safety_valve::generate_shine_points(&profile);
 
     if dark_content_warning {
         warn!(decision_id = %decision_id, "检测到黑暗内容");
     }
 
-    // 8. 生成来信（基于所有时间线的摘要）
     let timelines_summary: String = timelines
         .iter()
         .enumerate()
-        .map(|(i, t)| format!("时间线{}：{}", i + 1, &t.narrative[..t.narrative.len().min(200)]))
+        .map(|(i, t)| format!("时间线{}：{}", i + 1, truncate_chars(&t.narrative, 200)))
         .collect::<Vec<_>>()
         .join("\n\n");
 
-    let letter_result = letter::generate_letter(
+    // 8. 生成来信（基于所有时间线的摘要）
+    crate::engines::butterfly::emit_progress(
+        &app_handle,
+        run_count + 2,
+        progress_total,
+        "letter",
+        "正在生成来信...",
+    );
+
+    let letter_result = match letter::generate_letter(
         &state.ai_gateway,
         &profile,
         &input.decision_text,
@@ -182,13 +217,16 @@ pub async fn simulate_decision(
         &avg_emotion,
     )
     .await
-    .ok();
+    {
+        Ok(lr) => Some(lr),
+        Err(e) => {
+            warn!(error = %e, "来信生成失败，跳过来信");
+            None
+        }
+    };
 
     // 9. 构建决策树 + 人生走势图数据
-    let tree_data = crate::commands::tree::build_tree(
-        &input.decision_text,
-        &timelines,
-    );
+    let tree_data = crate::commands::tree::build_tree(&input.decision_text, &timelines);
     let decision_tree = serde_json::to_value(&tree_data).ok();
     let decision_tree_for_db = decision_tree.clone();
 
@@ -198,18 +236,30 @@ pub async fn simulate_decision(
         letter: letter_result.as_ref().map(|l| l.content.clone()),
         decision_tree: decision_tree_for_db,
         life_chart: None,
+        dark_content_warning,
+        emotional_recovery_needed,
+        shine_points: shine_points.clone(),
+        letter_tone_type: letter_result.as_ref().map(|l| l.tone_type.clone()),
+        letter_shine_points: letter_result
+            .as_ref()
+            .map(|l| l.shine_points.clone())
+            .unwrap_or_default(),
     };
 
     // 10. 存储到数据库
+    crate::engines::butterfly::emit_progress(
+        &app_handle,
+        progress_total,
+        progress_total,
+        "saving",
+        "正在保存结果...",
+    );
+
     {
         let conn = state.db.decisions.lock().await;
-        if let Err(e) = decision_store::save_decision(
-            &conn,
-            &profile.id,
-            &input,
-            &sim_result,
-            &avg_emotion,
-        ) {
+        if let Err(e) =
+            decision_store::save_decision(&conn, &profile.id, &input, &sim_result, &avg_emotion)
+        {
             warn!(error = %e, "存储决策记录失败（不影响返回结果）");
         }
 
@@ -220,9 +270,7 @@ pub async fn simulate_decision(
                 t.key_events
                     .last()
                     .map(|e| format!("{}: {}", e.year, e.event))
-                    .unwrap_or_else(|| {
-                        t.narrative.chars().take(60).collect::<String>()
-                    })
+                    .unwrap_or_else(|| t.narrative.chars().take(60).collect::<String>())
             })
             .collect::<Vec<_>>()
             .join(" / ");
@@ -270,16 +318,38 @@ pub async fn simulate_once(
 ) -> Result<SimulationCandidate, String> {
     {
         let conn = state.db.settings.lock().await;
-        let settings =
-            settings_store::get_all(&conn).map_err(|e| e.to_string())?;
+        let settings = settings_store::get_all(&conn).map_err(|e| e.to_string())?;
+        let provider = match settings.active_provider.as_str() {
+            "openai" => crate::ai::gateway::AIProvider::OpenAI,
+            "anthropic" => crate::ai::gateway::AIProvider::Anthropic,
+            "qwen" => crate::ai::gateway::AIProvider::Qwen,
+            "deepseek" => crate::ai::gateway::AIProvider::DeepSeek,
+            "gemini" => crate::ai::gateway::AIProvider::Gemini,
+            _ => crate::ai::gateway::AIProvider::Ollama,
+        };
         let mut gw = state.ai_gateway.write().await;
-        gw.set_ollama_model(settings.active_model_id);
+        gw.set_provider(provider);
+        if provider == crate::ai::gateway::AIProvider::Ollama {
+            gw.set_ollama_model(settings.active_model_id);
+        } else {
+            let api_key =
+                crate::storage::credential_store::get_api_key(&conn, &settings.active_provider)
+                    .map_err(|e| e.to_string())?
+                    .ok_or_else(|| format!("未设置 {} API Key", settings.active_provider))?;
+            let base_url =
+                crate::storage::credential_store::get_base_url(&conn, &settings.active_provider)
+                    .map_err(|e| e.to_string())?;
+            gw.set_cloud_config(crate::ai::gateway::CloudProviderConfig {
+                api_key,
+                model: settings.active_model_id,
+                base_url,
+            });
+        }
     }
 
     let profile = {
         let conn = state.db.profiles.lock().await;
-        profile_store::get_current(&conn)?
-            .ok_or_else(|| AppError::ProfileNotFound.to_string())?
+        profile_store::get_current(&conn)?.ok_or_else(|| AppError::ProfileNotFound.to_string())?
     };
 
     let user_context = UserContextBlock {
@@ -335,9 +405,7 @@ fn candidate_to_timeline(
         id: Uuid::new_v4().to_string(),
         decision_id: decision_id.to_string(),
         timeline_type,
-        narrative: crate::utils::text_format::ensure_narrative_breaks(
-            &candidate.narrative,
-        ),
+        narrative: crate::utils::text_format::ensure_narrative_breaks(&candidate.narrative),
         emotion: candidate.emotion_dimensions.clone(),
         realism_score: 0.5,
         key_events: candidate.key_events.clone(),
@@ -360,10 +428,10 @@ fn average_emotions(timelines: &[Timeline]) -> EmotionDimensions {
             / n,
         regret: timelines.iter().map(|t| t.emotion.regret).sum::<f32>() / n,
         hope: timelines.iter().map(|t| t.emotion.hope).sum::<f32>() / n,
-        loneliness: timelines
-            .iter()
-            .map(|t| t.emotion.loneliness)
-            .sum::<f32>()
-            / n,
+        loneliness: timelines.iter().map(|t| t.emotion.loneliness).sum::<f32>() / n,
     }
+}
+
+fn truncate_chars(text: &str, max_chars: usize) -> String {
+    text.chars().take(max_chars).collect()
 }

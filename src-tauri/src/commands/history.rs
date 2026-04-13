@@ -78,7 +78,7 @@ pub async fn get_decision(
     })
 }
 
-/// 删除一条决策记录（含关联时间线、人生地图节点）
+/// 删除一条决策记录（含所有关联数据，事务保护）
 #[tauri::command]
 pub async fn delete_decision(
     decision_id: String,
@@ -87,12 +87,6 @@ pub async fn delete_decision(
     let conn = state.db.decisions.lock().await;
     decision_store::delete_decision(&conn, &decision_id)
         .map_err(|e| e.to_string())?;
-
-    // 同时删除人生地图中关联的节点
-    life_map_store::delete_by_decision(&conn, &decision_id)
-        .unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "删除人生地图节点失败（非致命）");
-        });
 
     info!(decision_id = %decision_id, "删除决策记录");
     Ok(())

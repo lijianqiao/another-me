@@ -129,9 +129,9 @@ export default function HistoryList({ items, onSelect, onDelete }: Props) {
                       📌
                     </span>
                   )}
-                  {/* 删除按钮 — hover 时显示 */}
+                  {/* 删除按钮 — 始终显示 */}
                   <button
-                    className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center rounded-md text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-7 w-7"
+                    className="ml-auto inline-flex items-center justify-center rounded-md text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors h-7 w-7"
                     title={t("history.delete")}
                     onClick={(e) => {
                       e.stopPropagation();

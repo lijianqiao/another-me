@@ -13,7 +13,8 @@ struct ChatRequest<'a> {
     model: &'a str,
     messages: Vec<Message<'a>>,
     temperature: f32,
-    response_format: ResponseFormat,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_format: Option<ResponseFormat>,
 }
 
 #[derive(Serialize)]
@@ -50,10 +51,11 @@ pub async fn call_openai(
     system_prompt: &str,
     user_prompt: &str,
     temperature: f32,
+    json_mode: bool,
 ) -> Result<String, AppError> {
     let base = base_url.trim().trim_end_matches('/');
     let url = format!("{}/v1/chat/completions", base);
-    debug!(model = %model, "调用 OpenAI API");
+    debug!(model = %model, json_mode = json_mode, "调用 OpenAI API");
 
     let request = ChatRequest {
         model,
@@ -62,7 +64,11 @@ pub async fn call_openai(
             Message { role: "user", content: user_prompt },
         ],
         temperature,
-        response_format: ResponseFormat { r#type: "json_object".to_string() },
+        response_format: if json_mode {
+            Some(ResponseFormat { r#type: "json_object".to_string() })
+        } else {
+            None
+        },
     };
 
     let resp = client

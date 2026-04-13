@@ -97,11 +97,7 @@ fn require_cloud_base(c: &CloudProviderConfig) -> Result<&str, AppError> {
         .as_deref()
         .map(str::trim)
         .filter(|s| !s.is_empty())
-        .ok_or_else(|| {
-            AppError::AiGateway(
-                "未配置 API Base URL，请在模型管理页填写".into(),
-            )
-        })
+        .ok_or_else(|| AppError::AiGateway("未配置 API Base URL，请在模型管理页填写".into()))
 }
 
 impl AIGateway {
@@ -122,6 +118,7 @@ impl AIGateway {
         system_prompt: &str,
         user_prompt: &str,
         temperature: f32,
+        json_mode: bool,
     ) -> Result<String, AppError> {
         match self.config.provider {
             AIProvider::Ollama => {
@@ -145,6 +142,7 @@ impl AIGateway {
                     system_prompt,
                     user_prompt,
                     temperature,
+                    json_mode,
                 )
                 .await
             }
@@ -174,6 +172,7 @@ impl AIGateway {
                     user_prompt,
                     temperature,
                     "Qwen/DashScope",
+                    json_mode,
                 )
                 .await
             }
@@ -189,6 +188,7 @@ impl AIGateway {
                     user_prompt,
                     temperature,
                     "DeepSeek",
+                    json_mode,
                 )
                 .await
             }
@@ -286,10 +286,7 @@ pub fn build_profile_summary(profile: &UserProfile) -> String {
     lines.push(format!("日常习惯：{}", profile.habits.join("、")));
     lines.push(format!("社交倾向：{}", profile.social_tendency.as_str()));
     lines.push(format!("经济状况：{}", profile.financial_status.as_str()));
-    lines.push(format!(
-        "性格标签：{}",
-        profile.personality_tags.join("、")
-    ));
+    lines.push(format!("性格标签：{}", profile.personality_tags.join("、")));
     lines.push(format!("感情状态：{}", profile.relationship_status));
 
     if let Some(ref health) = profile.health_status {

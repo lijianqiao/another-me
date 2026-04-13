@@ -52,23 +52,58 @@ pub fn run() {
                 }
             };
 
-            // 从设置中读取模型 ID，初始化 AI Gateway
-            let model_id = {
+            // 从设置中读取模型 ID 和 Provider，初始化 AI Gateway
+            let (model_id, provider_str) = {
                 let conn = db.settings.blocking_lock();
-                settings_store::get_all(&conn)
-                    .map(|s| s.active_model_id)
-                    .unwrap_or_else(|_| "qwen3.5:4b".to_string())
+                let settings = settings_store::get_all(&conn)
+                    .unwrap_or_default();
+                (settings.active_model_id, settings.active_provider)
             };
-            let gateway_config = AIGatewayConfig {
+
+            let provider = match provider_str.as_str() {
+                "openai" => ai::gateway::AIProvider::OpenAI,
+                "anthropic" => ai::gateway::AIProvider::Anthropic,
+                "qwen" => ai::gateway::AIProvider::Qwen,
+                "deepseek" => ai::gateway::AIProvider::DeepSeek,
+                "gemini" => ai::gateway::AIProvider::Gemini,
+                _ => ai::gateway::AIProvider::Ollama,
+            };
+
+            let mut gateway_config = AIGatewayConfig {
+                provider,
                 ollama: OllamaConfig {
                     model: model_id.clone(),
                     ..OllamaConfig::default()
                 },
                 ..AIGatewayConfig::default()
             };
+
+            // 如果是云端 Provider，从 credential_store 恢复 API Key + Base URL
+            if provider != ai::gateway::AIProvider::Ollama {
+                let conn = db.settings.blocking_lock();
+                let api_key = crate::storage::credential_store::get_api_key(&conn, &provider_str)
+                    .ok()
+                    .flatten();
+                let base_url = crate::storage::credential_store::get_base_url(&conn, &provider_str)
+                    .ok()
+                    .flatten();
+
+                if let Some(key) = api_key {
+                    gateway_config.cloud = Some(ai::gateway::CloudProviderConfig {
+                        api_key: key,
+                        model: model_id.clone(),
+                        base_url,
+                    });
+                    info!(provider = %provider_str, model = %model_id, "恢复云端 Provider 配置");
+                } else {
+                    warn!(provider = %provider_str, "云端 Provider 无有效 API Key，回退到 Ollama");
+                    gateway_config.provider = ai::gateway::AIProvider::Ollama;
+                }
+            }
+
             let ai_gateway =
                 Arc::new(RwLock::new(AIGateway::new(gateway_config)));
-            info!(model = %model_id, "AI Gateway initialized");
+            info!(provider = %provider_str, model = %model_id, "AI Gateway initialized");
 
             // Python Worker Manager（lazy start — 首次推演时启动）
             // 搜索多个候选路径：开发模式和打包后路径不同

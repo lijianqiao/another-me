@@ -76,6 +76,8 @@ impl PythonBridge {
 
             info!(path = %main_py.display(), "使用 Python 解释器启动 Worker");
             Command::new("python")
+                .arg("-X")
+                .arg("utf8")
                 .arg("-u")
                 .arg(&main_py)
                 .current_dir(python_dir)
@@ -83,6 +85,8 @@ impl PythonBridge {
                 .stdout(Stdio::piped())
                 .stderr(Stdio::null())
                 .env("PYTHONUNBUFFERED", "1")
+                .env("PYTHONUTF8", "1")
+                .env("PYTHONIOENCODING", "utf-8")
                 .kill_on_drop(true)
                 .spawn()
                 .map_err(|e| {

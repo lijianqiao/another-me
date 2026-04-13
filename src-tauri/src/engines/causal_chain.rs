@@ -23,17 +23,13 @@ pub struct CausalContext {
 const MAX_RECENT: usize = 5;
 
 /// 从历史数据构建因果链上下文
-pub fn build_context(
-    conn: &Connection,
-    profile_id: &str,
-) -> AppResult<CausalContext> {
+pub fn build_context(conn: &Connection, profile_id: &str) -> AppResult<CausalContext> {
     // 1. 加载最近推演历史
     let recent_stored = anchor_store::get_recent_decisions(conn, profile_id, MAX_RECENT)?;
     let recent_decisions: Vec<GwDecisionSummary> = recent_stored
         .iter()
         .filter_map(|stored| {
-            let result: SimulationResult =
-                serde_json::from_str(&stored.result_json).ok()?;
+            let result: SimulationResult = serde_json::from_str(&stored.result_json).ok()?;
             let key_outcome = extract_key_outcome(&result.timelines);
             Some(GwDecisionSummary {
                 decision_text: stored.decision_text.clone(),
@@ -46,15 +42,19 @@ pub fn build_context(
     // 2. 加载锚定决策
     let anchor_timeline = match anchor_store::get_anchored_decision(conn, profile_id)? {
         Some(anchored) => {
-            let result: SimulationResult =
-                serde_json::from_str(&anchored.result_json).ok().unwrap_or_else(|| {
-                    SimulationResult {
-                        decision_id: anchored.id.clone(),
-                        timelines: vec![],
-                        letter: None,
-                        decision_tree: None,
-                        life_chart: None,
-                    }
+            let result: SimulationResult = serde_json::from_str(&anchored.result_json)
+                .ok()
+                .unwrap_or_else(|| SimulationResult {
+                    decision_id: anchored.id.clone(),
+                    timelines: vec![],
+                    letter: None,
+                    decision_tree: None,
+                    life_chart: None,
+                    dark_content_warning: false,
+                    emotional_recovery_needed: false,
+                    shine_points: vec![],
+                    letter_tone_type: None,
+                    letter_shine_points: vec![],
                 });
             let key_outcome = extract_key_outcome(&result.timelines);
             let personality_changes = extract_personality_changes(&result.timelines);
@@ -90,8 +90,7 @@ pub fn build_context(
         }
         if anchor_timeline.is_some() {
             lines.push(
-                "用户已锚定其中一条时间线作为人生主线，新推演应承接该锚定线的世界观。"
-                    .to_string(),
+                "用户已锚定其中一条时间线作为人生主线，新推演应承接该锚定线的世界观。".to_string(),
             );
         }
         Some(lines.join("\n"))
@@ -173,8 +172,16 @@ mod tests {
             emotion: EmotionDimensions::neutral(),
             realism_score: 0.5,
             key_events: vec![
-                KeyEvent { year: "2026".into(), event: "开始创业".into(), emotion: "positive".into() },
-                KeyEvent { year: "2028".into(), event: "公司上市".into(), emotion: "positive".into() },
+                KeyEvent {
+                    year: "2026".into(),
+                    event: "开始创业".into(),
+                    emotion: "positive".into(),
+                },
+                KeyEvent {
+                    year: "2028".into(),
+                    event: "公司上市".into(),
+                    emotion: "positive".into(),
+                },
             ],
             dimension_scores: vec![],
             black_swan_event: None,

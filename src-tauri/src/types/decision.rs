@@ -82,4 +82,19 @@ pub struct SimulationResult {
     /// 人生走势图 JSON（Sprint 6 填充）
     #[serde(default)]
     pub life_chart: Option<serde_json::Value>,
+    /// 黑暗内容预警（旧数据默认 false）
+    #[serde(default)]
+    pub dark_content_warning: bool,
+    /// 情绪恢复建议（旧数据默认 false）
+    #[serde(default)]
+    pub emotional_recovery_needed: bool,
+    /// 闪光点（旧数据默认空）
+    #[serde(default)]
+    pub shine_points: Vec<String>,
+    /// 来信语气类型（旧数据默认 None）
+    #[serde(default)]
+    pub letter_tone_type: Option<String>,
+    /// 来信闪光点（旧数据默认空）
+    #[serde(default)]
+    pub letter_shine_points: Vec<String>,
 }

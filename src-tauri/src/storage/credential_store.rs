@@ -34,6 +34,13 @@ const MASTER_KEY_LEN: usize = 32;
 static MASTER_KEY: OnceLock<[u8; MASTER_KEY_LEN]> = OnceLock::new();
 
 fn master_key_path() -> PathBuf {
+    // 便携模式：exe 旁的 data/ 目录
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            return exe_dir.join("data").join("credential.key");
+        }
+    }
+    // 回退：仅当无法获取 exe 路径时
     let base = dirs::data_local_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."));
     base.join("another-me").join("credential.key")

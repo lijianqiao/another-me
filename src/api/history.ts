@@ -39,6 +39,11 @@ export interface HistoricalDecision {
     letter?: string | null;
     decision_tree?: TreeNode | null;
     life_chart?: unknown;
+    dark_content_warning?: boolean;
+    emotional_recovery_needed?: boolean;
+    shine_points?: string[];
+    letter_tone_type?: string | null;
+    letter_shine_points?: string[];
   };
 }
 
