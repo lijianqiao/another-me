@@ -16,7 +16,11 @@ use tauri::Emitter;
 use tokio::sync::{RwLock, Semaphore};
 use tracing::{debug, info, warn};
 
-use crate::ai::gateway::{build_profile_summary, format_user_context, AIGateway, UserContextBlock};
+use crate::ai::gateway::{
+    build_profile_summary, format_user_context, provider_to_str, AIGateway, AIProvider,
+    UserContextBlock,
+};
+use crate::python::protocol::{ClusteringResult, RealismCheckResult};
 use crate::engines::perturbation::PerturbationFactors;
 use crate::python::subprocess_bridge::{PythonBridge, PythonWorkerManager};
 use crate::types::emotion::EmotionDimensions;
@@ -172,7 +176,7 @@ impl ButterflyEngine {
         let candidate: SimulationCandidate = serde_json::from_str(&raw_response).map_err(|e| {
             warn!(
                 error = %e,
-                response = &raw_response[..raw_response.len().min(500)],
+                response = truncate_chars(&raw_response, 500),
                 "LLM JSON 解析失败"
             );
             AppError::AiGateway(format!("LLM 返回的 JSON 格式不正确: {e}"))
@@ -209,6 +213,15 @@ impl ButterflyEngine {
     ) -> Result<Vec<SimulationCandidate>, AppError> {
         let run_count = self.config.run_count;
         info!(run_count = run_count, "开始批量推演");
+        let provider = {
+            let gw = self.ai_gateway.read().await;
+            gw.provider()
+        };
+        let max_concurrent = match provider {
+            AIProvider::Ollama => LLM_MAX_CONCURRENT,
+            _ => run_count.max(1),
+        };
+        info!(provider = provider_to_str(provider), max_concurrent = max_concurrent, "推演并发度已确定");
 
         // Step 1: 通知前端 — 准备推演
         emit_progress(
@@ -242,7 +255,7 @@ impl ButterflyEngine {
             .collect();
 
         // Step 3: 受控并发执行推演（Semaphore 限流 + 重试）
-        let semaphore = Arc::new(Semaphore::new(LLM_MAX_CONCURRENT));
+        let semaphore = Arc::new(Semaphore::new(max_concurrent));
         let completed = Arc::new(AtomicUsize::new(0));
         let max_notified = Arc::new(AtomicUsize::new(0));
 
@@ -349,7 +362,10 @@ impl ButterflyEngine {
 
         if candidates.is_empty() {
             return Err(AppError::AiGateway(
-                "所有推演均失败，请检查 Ollama 连接".to_string(),
+                format!(
+                    "所有推演均失败，请检查 {} Provider 配置、模型或网络",
+                    provider_to_str(provider)
+                ),
             ));
         }
 
@@ -407,7 +423,8 @@ impl ButterflyEngine {
         candidates: Vec<SimulationCandidate>,
         bridge: &Arc<PythonBridge>,
     ) -> Vec<SimulationCandidate> {
-        let mut checked = Vec::with_capacity(candidates.len());
+        let mut preferred = Vec::with_capacity(candidates.len());
+        let mut degraded = Vec::new();
         let mut remaining = candidates.into_iter();
 
         while let Some(candidate) = remaining.next() {
@@ -417,19 +434,29 @@ impl ButterflyEngine {
 
             match bridge.call("check_realism", payload).await {
                 Ok(result) => {
-                    let status = result
-                        .get("status")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("BALANCED");
+                    let parsed = match serde_json::from_value::<RealismCheckResult>(result) {
+                        Ok(parsed) => parsed,
+                        Err(e) => {
+                            warn!(error = %e, "现实主义校验响应格式无效，跳过剩余校验并重启 Worker");
+                            if let Some(ref worker) = self.python_worker {
+                                worker.invalidate().await;
+                            }
+                            preferred.push(candidate);
+                            preferred.extend(remaining);
+                            break;
+                        }
+                    };
 
-                    if status == "BALANCED" {
+                    if parsed.status == "BALANCED" {
                         debug!("叙事通过现实主义校验");
-                        checked.push(candidate);
+                        preferred.push(candidate);
                     } else {
-                        info!(status = status, "叙事未通过现实主义校验，保留但降低优先级");
-                        // 仍然保留（不重试 LLM），标记为低优先级
-                        // 放到列表末尾，聚类时自然被排除
-                        checked.push(candidate);
+                        info!(
+                            status = %parsed.status,
+                            positivity_ratio = parsed.positivity_ratio,
+                            "叙事未通过现实主义校验，降级为低优先级候选"
+                        );
+                        degraded.push(candidate);
                     }
                 }
                 Err(e) => {
@@ -437,14 +464,19 @@ impl ButterflyEngine {
                     if let Some(ref worker) = self.python_worker {
                         worker.invalidate().await;
                     }
-                    checked.push(candidate);
-                    checked.extend(remaining);
+                    preferred.push(candidate);
+                    preferred.extend(remaining);
                     break;
                 }
             }
         }
 
-        checked
+        if preferred.len() >= self.config.timeline_count {
+            return preferred;
+        }
+
+        preferred.extend(degraded);
+        preferred
     }
 
     // ========================================================================
@@ -503,10 +535,18 @@ impl ButterflyEngine {
             .await
             .map_err(|e| AppError::PythonBridge(format!("聚类调用失败: {e}")))?;
 
-        let indices: Vec<usize> = result
-            .get("cluster_indices")
-            .and_then(|v| serde_json::from_value(v.clone()).ok())
-            .unwrap_or_else(|| (0..k).collect());
+        let parsed: ClusteringResult = serde_json::from_value(result)
+            .map_err(|e| AppError::PythonBridge(format!("聚类响应格式无效: {e}")))?;
+        let indices = parsed.cluster_indices;
+        if indices.is_empty() {
+            return Err(AppError::PythonBridge("聚类返回空索引列表".into()));
+        }
+        if let Some(invalid_idx) = indices.iter().copied().find(|idx| *idx >= candidates.len()) {
+            return Err(AppError::PythonBridge(format!(
+                "聚类返回越界索引: {invalid_idx} >= {}",
+                candidates.len()
+            )));
+        }
 
         let mut selected = Vec::new();
         for &idx in &indices {
@@ -530,6 +570,10 @@ impl ButterflyEngine {
         info!(selected = selected.len(), "聚类完成");
         Ok(selected)
     }
+}
+
+fn truncate_chars(text: &str, max_chars: usize) -> String {
+    text.chars().take(max_chars).collect()
 }
 
 // ============================================================================

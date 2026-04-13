@@ -44,7 +44,7 @@ const CLOUD_PROVIDERS = [
   {
     id: "deepseek",
     label: "DeepSeek",
-    defaultModel: "deepseek-v3.2",
+    defaultModel: "deepseek-chat",
     defaultBase: "https://api.deepseek.com/v1",
   },
   {
@@ -192,7 +192,7 @@ export default function ModelManagerPage() {
   };
 
   return (
-    <section className="max-w-2xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <section className="max-w-[1320px] mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
       <h2 className="text-2xl font-bold tracking-tight">{t("models.title")}</h2>
       <p className="text-sm text-muted-foreground mt-1 mb-6">{t("models.subtitle")}</p>
 
@@ -291,8 +291,8 @@ export default function ModelManagerPage() {
                     <span className="text-sm font-semibold">{cp.label}</span>
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${hasKey
-                          ? "bg-green-500/15 text-green-600 dark:text-green-400"
-                          : "bg-muted text-muted-foreground"
+                        ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                        : "bg-muted text-muted-foreground"
                         }`}
                     >
                       {hasKey ? t("settings.key_configured") : t("settings.key_not_set")}

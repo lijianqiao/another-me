@@ -31,6 +31,29 @@ pub enum AIProvider {
     Gemini,
 }
 
+pub fn parse_provider_str(value: &str) -> Result<AIProvider, AppError> {
+    match value {
+        "ollama" => Ok(AIProvider::Ollama),
+        "openai" => Ok(AIProvider::OpenAI),
+        "anthropic" => Ok(AIProvider::Anthropic),
+        "qwen" => Ok(AIProvider::Qwen),
+        "deepseek" => Ok(AIProvider::DeepSeek),
+        "gemini" => Ok(AIProvider::Gemini),
+        _ => Err(AppError::InvalidInput(format!("未知 Provider: {value}"))),
+    }
+}
+
+pub fn provider_to_str(provider: AIProvider) -> &'static str {
+    match provider {
+        AIProvider::Ollama => "ollama",
+        AIProvider::OpenAI => "openai",
+        AIProvider::Anthropic => "anthropic",
+        AIProvider::Qwen => "qwen",
+        AIProvider::DeepSeek => "deepseek",
+        AIProvider::Gemini => "gemini",
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CloudProviderConfig {
     pub api_key: String,
@@ -128,6 +151,7 @@ impl AIGateway {
                     system_prompt,
                     user_prompt,
                     temperature,
+                    json_mode,
                 )
                 .await
             }
@@ -203,6 +227,7 @@ impl AIGateway {
                     system_prompt,
                     user_prompt,
                     temperature,
+                    json_mode,
                 )
                 .await
             }

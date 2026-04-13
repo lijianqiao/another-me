@@ -100,7 +100,7 @@ export default function ResultsPage() {
   };
 
   return (
-    <section className="w-full max-w-5xl mx-auto p-4 md:p-6 lg:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <section className="w-full max-w-[1480px] mx-auto p-4 md:p-6 xl:px-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <ConfirmDialog
         open={showDarkDialog}
         kind="warning"

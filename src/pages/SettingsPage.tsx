@@ -55,7 +55,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <section className="max-w-2xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <section className="max-w-[1160px] mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
       <h2 className="text-2xl font-bold tracking-tight mb-6">{t("nav.settings")}</h2>
 
       <div className="space-y-4">
@@ -68,11 +68,10 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2">
               {ollamaStatus ? (
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                    ollamaStatus.running
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${ollamaStatus.running
                       ? "bg-green-500/15 text-green-600 dark:text-green-400"
                       : "bg-destructive/15 text-destructive"
-                  }`}
+                    }`}
                 >
                   {ollamaStatus.running
                     ? t("settings.ollama_running")
@@ -116,11 +115,10 @@ export default function SettingsPage() {
                   {ollamaStatus.models.map((m) => (
                     <span
                       key={m}
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
-                        m.startsWith(settings.active_model_id)
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${m.startsWith(settings.active_model_id)
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-secondary text-secondary-foreground border-border"
-                      }`}
+                        }`}
                     >
                       {m}
                     </span>

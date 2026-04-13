@@ -19,6 +19,19 @@ pub fn save_decision(
     result: &SimulationResult,
     emotion_snapshot: &EmotionDimensions,
 ) -> AppResult<()> {
+    let tx = conn.unchecked_transaction()?;
+    save_decision_in_tx(&tx, profile_id, input, result, emotion_snapshot)?;
+    tx.commit()?;
+    Ok(())
+}
+
+pub fn save_decision_in_tx(
+    conn: &Connection,
+    profile_id: &str,
+    input: &SimulateInput,
+    result: &SimulationResult,
+    emotion_snapshot: &EmotionDimensions,
+) -> AppResult<()> {
     let result_json = serde_json::to_string(result)?;
     let emotion_json = serde_json::to_string(emotion_snapshot)?;
 

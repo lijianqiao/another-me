@@ -5,6 +5,8 @@
 @DateTime: 2026-04-10
 @Docs: PyInstaller 打包脚本，将 Python Worker 打包为独立可执行文件供 Tauri Sidecar 调用
 """
+
+import os
 import platform
 import subprocess
 import sys
@@ -17,8 +19,6 @@ def main():
     entry = root / "main.py"
 
     suffix = ".exe" if platform.system() == "Windows" else ""
-    target_name = f"another-me-worker{suffix}"
-
     # 构建目标目录
     dist_dir = root.parent / "src-tauri" / "binaries"
     dist_dir.mkdir(parents=True, exist_ok=True)
@@ -27,10 +27,14 @@ def main():
     target_triple = _detect_target_triple()
 
     cmd = [
-        sys.executable, "-m", "PyInstaller",
+        sys.executable,
+        "-m",
+        "PyInstaller",
         "--onefile",
-        "--name", f"another-me-worker-{target_triple}",
-        "--distpath", str(dist_dir),
+        "--name",
+        f"another-me-worker-{target_triple}",
+        "--distpath",
+        str(dist_dir),
         "--clean",
         "--noconfirm",
         str(entry),
@@ -43,6 +47,10 @@ def main():
 
 def _detect_target_triple() -> str:
     """检测当前平台的 Rust target triple"""
+    override = os.environ.get("ANOTHER_ME_TARGET_TRIPLE")
+    if override:
+        return override
+
     system = platform.system().lower()
     machine = platform.machine().lower()
 
@@ -64,10 +72,7 @@ def _detect_target_triple() -> str:
 
     # 降级使用 rustc 获取
     try:
-        result = subprocess.run(
-            ["rustc", "-vV"],
-            capture_output=True, text=True, check=True
-        )
+        result = subprocess.run(["rustc", "-vV"], capture_output=True, text=True, check=True)
         for line in result.stdout.splitlines():
             if line.startswith("host:"):
                 return line.split(":")[1].strip()

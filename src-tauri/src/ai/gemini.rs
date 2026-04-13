@@ -36,8 +36,8 @@ struct Part<'a> {
 #[derive(Serialize)]
 struct GenerationConfig {
     temperature: f32,
-    #[serde(rename = "responseMimeType")]
-    response_mime_type: String,
+    #[serde(rename = "responseMimeType", skip_serializing_if = "Option::is_none")]
+    response_mime_type: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -68,13 +68,14 @@ pub async fn call_gemini(
     system_prompt: &str,
     user_prompt: &str,
     temperature: f32,
+    json_mode: bool,
 ) -> Result<String, AppError> {
     let base = base_url.trim().trim_end_matches('/');
     let url = format!(
         "{}/v1beta/models/{}:generateContent?key={}",
         base, model, api_key
     );
-    debug!(model = %model, "调用 Gemini API");
+    debug!(model = %model, json_mode = json_mode, "调用 Gemini API");
 
     let request = GenerateRequest {
         system_instruction: if system_prompt.is_empty() {
@@ -90,7 +91,11 @@ pub async fn call_gemini(
         }],
         generation_config: GenerationConfig {
             temperature,
-            response_mime_type: "application/json".to_string(),
+            response_mime_type: if json_mode {
+                Some("application/json".to_string())
+            } else {
+                None
+            },
         },
     };
 

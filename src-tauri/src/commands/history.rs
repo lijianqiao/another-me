@@ -54,10 +54,19 @@ pub async fn get_decision(
     decision_id: String,
     state: State<'_, AppState>,
 ) -> Result<HistoricalDecision, String> {
+    let profile = {
+        let conn = state.db.profiles.lock().await;
+        profile_store::get_current(&conn)?
+            .ok_or_else(|| AppError::ProfileNotFound.to_string())?
+    };
+
     let conn = state.db.decisions.lock().await;
     let stored = decision_store::get_decision(&conn, &decision_id)
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("决策记录不存在: {decision_id}"))?;
+        .ok_or_else(|| AppError::DecisionNotFound(decision_id.clone()).to_string())?;
+    if stored.profile_id != profile.id {
+        return Err(AppError::DecisionNotFound(decision_id).to_string());
+    }
 
     let result: SimulationResult =
         serde_json::from_str(&stored.result_json)
@@ -84,7 +93,19 @@ pub async fn delete_decision(
     decision_id: String,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
+    let profile = {
+        let conn = state.db.profiles.lock().await;
+        profile_store::get_current(&conn)?
+            .ok_or_else(|| AppError::ProfileNotFound.to_string())?
+    };
+
     let conn = state.db.decisions.lock().await;
+    let stored = decision_store::get_decision(&conn, &decision_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| AppError::DecisionNotFound(decision_id.clone()).to_string())?;
+    if stored.profile_id != profile.id {
+        return Err(AppError::DecisionNotFound(decision_id).to_string());
+    }
     decision_store::delete_decision(&conn, &decision_id)
         .map_err(|e| e.to_string())?;
 

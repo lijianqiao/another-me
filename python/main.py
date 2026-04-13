@@ -10,6 +10,8 @@ import json
 import sys
 import traceback
 
+REQUIRED_PYTHON = (3, 14)
+
 
 def configure_stdio() -> None:
     """强制 stdin/stdout/stderr 使用 UTF-8，避免 Windows 管道默认本地编码。"""
@@ -39,12 +41,36 @@ def write_response(response: dict) -> None:
     print(json.dumps(response, ensure_ascii=False), flush=True)
 
 
+def validate_runtime() -> None:
+    """启动前校验 Python 版本和核心依赖，失败时在 ready 前直接暴露。"""
+    if sys.version_info < REQUIRED_PYTHON:
+        major, minor = REQUIRED_PYTHON
+        raise RuntimeError(
+            f"Python Worker 需要 Python {major}.{minor}+，当前为 {sys.version_info.major}.{sys.version_info.minor}"
+        )
+
+    from another_me.nlp.clustering import cluster_narratives_tfidf  # noqa: F401
+    from another_me.nlp.realism_factor import check_realism  # noqa: F401
+
+
 def main():
     """
     主事件循环：持久化运行，每次读一行 JSON，分发到对应 handler，返回 JSON 结果。
     Rust 端通过 stdin/stdout 与此进程通信。
     """
     configure_stdio()
+
+    try:
+        validate_runtime()
+    except Exception as exc:
+        write_response(
+            {
+                "success": False,
+                "error": f"Worker startup failed: {type(exc).__name__}: {exc}",
+                "traceback": traceback.format_exc(),
+            }
+        )
+        return
 
     handlers = {
         "ping": ping_handler,

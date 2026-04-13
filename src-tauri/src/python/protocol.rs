@@ -29,3 +29,8 @@ pub struct RealismCheckResult {
     pub positivity_ratio: f32,
     pub suggestion: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClusteringResult {
+    pub cluster_indices: Vec<usize>,
+}

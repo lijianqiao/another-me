@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   black_swan_enabled: false,
   safety_valve_enabled: true,
   active_model_id: "qwen3.5:4b",
+  active_provider: "ollama",
   update_check_frequency: "weekly",
   last_update_check: null,
   audio_enabled: false,

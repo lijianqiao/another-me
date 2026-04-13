@@ -30,7 +30,8 @@ struct ChatRequest<'a> {
     model: &'a str,
     messages: Vec<ChatMessage<'a>>,
     stream: bool,
-    format: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    format: Option<&'a str>,
     options: ChatOptions,
 }
 
@@ -62,9 +63,10 @@ pub async fn call_ollama(
     system_prompt: &str,
     user_prompt: &str,
     temperature: f32,
+    json_mode: bool,
 ) -> Result<String, AppError> {
     let url = format!("{}/api/chat", config.base_url);
-    debug!(model = %config.model, temp = temperature, "调用 Ollama Chat API");
+    debug!(model = %config.model, temp = temperature, json_mode = json_mode, "调用 Ollama Chat API");
 
     let mut messages = Vec::new();
     if !system_prompt.is_empty() {
@@ -82,7 +84,7 @@ pub async fn call_ollama(
         model: &config.model,
         messages,
         stream: false,
-        format: "json",
+        format: if json_mode { Some("json") } else { None },
         options: ChatOptions { temperature },
     };
 

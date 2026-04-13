@@ -33,7 +33,7 @@ export default function AppShell() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <main className="flex-1 overflow-y-auto w-full">
-          <div className="mx-auto w-full max-w-[1240px] px-4 py-6 md:px-8 lg:py-10 transition-all duration-300">
+          <div className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8 xl:px-10 lg:py-10 transition-all duration-300">
             <Outlet />
           </div>
         </main>

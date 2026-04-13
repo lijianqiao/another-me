@@ -9,7 +9,7 @@ use tauri::State;
 use tracing::{info, warn};
 use uuid::Uuid;
 
-use crate::ai::gateway::{build_profile_summary, UserContextBlock};
+use crate::ai::gateway::{build_profile_summary, parse_provider_str, UserContextBlock};
 use crate::commands::letter::{self, LetterResult};
 use crate::commands::AppState;
 use crate::engines::butterfly::{ButterflyEngine, ButterflyEngineConfig, SimulationCandidate};
@@ -46,14 +46,7 @@ pub async fn simulate_decision(
         let conn = state.db.settings.lock().await;
         let settings = settings_store::get_all(&conn).map_err(|e| e.to_string())?;
 
-        let provider = match settings.active_provider.as_str() {
-            "openai" => crate::ai::gateway::AIProvider::OpenAI,
-            "anthropic" => crate::ai::gateway::AIProvider::Anthropic,
-            "qwen" => crate::ai::gateway::AIProvider::Qwen,
-            "deepseek" => crate::ai::gateway::AIProvider::DeepSeek,
-            "gemini" => crate::ai::gateway::AIProvider::Gemini,
-            _ => crate::ai::gateway::AIProvider::Ollama,
-        };
+        let provider = parse_provider_str(&settings.active_provider).map_err(|e| e.to_string())?;
 
         let mut gw = state.ai_gateway.write().await;
         gw.set_provider(provider);
@@ -257,11 +250,11 @@ pub async fn simulate_decision(
 
     {
         let conn = state.db.decisions.lock().await;
-        if let Err(e) =
-            decision_store::save_decision(&conn, &profile.id, &input, &sim_result, &avg_emotion)
-        {
-            warn!(error = %e, "存储决策记录失败（不影响返回结果）");
-        }
+        let tx = conn
+            .unchecked_transaction()
+            .map_err(|e| format!("开启结果存储事务失败: {e}"))?;
+        decision_store::save_decision_in_tx(&tx, &profile.id, &input, &sim_result, &avg_emotion)
+            .map_err(|e| format!("保存推演结果失败: {e}"))?;
 
         // 11. 写入人生地图节点（Sprint 7）
         let outcome_summary: String = timelines
@@ -285,9 +278,10 @@ pub async fn simulate_decision(
             outcome_summary,
             personality_changes: causal_chain::extract_personality_changes_pub(&timelines),
         };
-        if let Err(e) = life_map_store::save_node(&conn, &node) {
-            warn!(error = %e, "写入人生地图节点失败（不影响返回结果）");
-        }
+        life_map_store::save_node(&tx, &node)
+            .map_err(|e| format!("写入人生地图节点失败: {e}"))?;
+        tx.commit()
+            .map_err(|e| format!("提交结果存储事务失败: {e}"))?;
     }
 
     let total_elapsed = t_start.elapsed();
@@ -319,14 +313,7 @@ pub async fn simulate_once(
     {
         let conn = state.db.settings.lock().await;
         let settings = settings_store::get_all(&conn).map_err(|e| e.to_string())?;
-        let provider = match settings.active_provider.as_str() {
-            "openai" => crate::ai::gateway::AIProvider::OpenAI,
-            "anthropic" => crate::ai::gateway::AIProvider::Anthropic,
-            "qwen" => crate::ai::gateway::AIProvider::Qwen,
-            "deepseek" => crate::ai::gateway::AIProvider::DeepSeek,
-            "gemini" => crate::ai::gateway::AIProvider::Gemini,
-            _ => crate::ai::gateway::AIProvider::Ollama,
-        };
+        let provider = parse_provider_str(&settings.active_provider).map_err(|e| e.to_string())?;
         let mut gw = state.ai_gateway.write().await;
         gw.set_provider(provider);
         if provider == crate::ai::gateway::AIProvider::Ollama {

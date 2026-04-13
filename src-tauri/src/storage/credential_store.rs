@@ -21,7 +21,7 @@ use aes_gcm::{
     Aes256Gcm, Nonce,
 };
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, Error as SqlError};
 use serde::Serialize;
 use tracing::{info, warn};
 
@@ -163,12 +163,15 @@ pub fn save_cloud_provider(
     let enc_key: Option<String> = if let Some(k) = api_key {
         Some(encrypt(k, provider)?)
     } else {
-        conn.query_row(
+        match conn.query_row(
             "SELECT encrypted_key FROM api_keys WHERE provider = ?1",
             params![provider],
-            |r| r.get(0),
-        )
-        .ok()
+            |r| r.get::<_, String>(0),
+        ) {
+            Ok(existing) => Some(existing),
+            Err(SqlError::QueryReturnedNoRows) => None,
+            Err(e) => return Err(e.into()),
+        }
     };
 
     let enc_key = enc_key.ok_or_else(|| {
@@ -177,17 +180,23 @@ pub fn save_cloud_provider(
         )
     })?;
 
-    let url_trim = base_url.map(str::trim).filter(|s| !s.is_empty());
-    let merged_url: Option<String> = if url_trim.is_some() {
-        url_trim.map(|s| s.to_string())
+    let merged_url: Option<String> = if let Some(raw_url) = base_url {
+        let trimmed = raw_url.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
     } else {
-        conn.query_row(
+        match conn.query_row(
             "SELECT base_url FROM api_keys WHERE provider = ?1",
             params![provider],
             |r| r.get::<_, Option<String>>(0),
-        )
-        .ok()
-        .flatten()
+        ) {
+            Ok(existing) => existing,
+            Err(SqlError::QueryReturnedNoRows) => None,
+            Err(e) => return Err(e.into()),
+        }
     };
 
     conn.execute(
@@ -207,13 +216,15 @@ pub fn get_api_key(
     conn: &Connection,
     provider: &str,
 ) -> AppResult<Option<String>> {
-    let result: Option<String> = conn
-        .query_row(
-            "SELECT encrypted_key FROM api_keys WHERE provider = ?1",
-            params![provider],
-            |row| row.get(0),
-        )
-        .ok();
+    let result = match conn.query_row(
+        "SELECT encrypted_key FROM api_keys WHERE provider = ?1",
+        params![provider],
+        |row| row.get::<_, String>(0),
+    ) {
+        Ok(encrypted) => Some(encrypted),
+        Err(SqlError::QueryReturnedNoRows) => None,
+        Err(e) => return Err(e.into()),
+    };
 
     match result {
         Some(encrypted) => Ok(Some(decrypt(&encrypted, provider)?)),
@@ -232,14 +243,13 @@ pub fn delete_api_key(conn: &Connection, provider: &str) -> AppResult<()> {
 }
 
 /// 检查 API Key 是否存在（不返回明文）
-pub fn has_api_key(conn: &Connection, provider: &str) -> bool {
-    conn.query_row(
+pub fn has_api_key(conn: &Connection, provider: &str) -> AppResult<bool> {
+    let count = conn.query_row(
         "SELECT COUNT(*) FROM api_keys WHERE provider = ?1",
         params![provider],
         |row| row.get::<_, i32>(0),
-    )
-    .unwrap_or(0)
-        > 0
+    )?;
+    Ok(count > 0)
 }
 
 /// 读取 Base URL（明文）
@@ -247,14 +257,15 @@ pub fn get_base_url(
     conn: &Connection,
     provider: &str,
 ) -> AppResult<Option<String>> {
-    let v: Option<String> = conn
-        .query_row(
-            "SELECT base_url FROM api_keys WHERE provider = ?1",
-            params![provider],
-            |r| r.get::<_, Option<String>>(0),
-        )
-        .ok()
-        .flatten();
+    let v = match conn.query_row(
+        "SELECT base_url FROM api_keys WHERE provider = ?1",
+        params![provider],
+        |r| r.get::<_, Option<String>>(0),
+    ) {
+        Ok(url) => url,
+        Err(SqlError::QueryReturnedNoRows) => None,
+        Err(e) => return Err(e.into()),
+    };
     Ok(v.filter(|s| !s.trim().is_empty()))
 }
 
@@ -272,7 +283,7 @@ pub fn list_cloud_provider_status(
     let providers = ["openai", "anthropic", "qwen", "deepseek", "gemini"];
     let mut out = Vec::new();
     for p in providers {
-        let has_key = has_api_key(conn, p);
+        let has_key = has_api_key(conn, p)?;
         let base_url = get_base_url(conn, p)?.filter(|s| !s.trim().is_empty());
         out.push(CloudProviderStatus {
             provider: p.to_string(),

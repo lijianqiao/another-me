@@ -6,13 +6,15 @@
 @Docs: 现实主义因子计算 — 确保推演结果既不过于乐观也不过于悲观
 """
 
-from snownlp import SnowNLP
 from dataclasses import dataclass
 from enum import Enum
+
+from snownlp import SnowNLP
 
 
 class RealismStatus(Enum):
     """现实主义检查状态"""
+
     BALANCED = "BALANCED"
     TOO_POSITIVE = "TOO_POSITIVE"
     TOO_NEGATIVE = "TOO_NEGATIVE"
@@ -21,6 +23,7 @@ class RealismStatus(Enum):
 @dataclass
 class RealismCheckResult:
     """现实主义检查结果"""
+
     status: RealismStatus
     positivity_ratio: float
     suggestion: str | None
@@ -67,7 +70,14 @@ class RealismChecker:
             elif sentiment < 0.4:
                 negative_count += 1
 
-        total = positive_count + negative_count + 0.001
+        total = positive_count + negative_count
+        if total == 0:
+            return RealismCheckResult(
+                status=RealismStatus.BALANCED,
+                positivity_ratio=0.5,
+                suggestion=None,
+            )
+
         positivity_ratio = positive_count / total
 
         if positivity_ratio > self.POSITIVITY_MAX:

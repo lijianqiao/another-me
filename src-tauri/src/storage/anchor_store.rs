@@ -5,15 +5,11 @@
 use chrono::Utc;
 use rusqlite::{params, Connection};
 
-use crate::storage::decision_store::{self, StoredDecision};
+use crate::storage::decision_store::StoredDecision;
 use crate::types::error::AppResult;
 
 /// 设置锚定（先清除同 profile 下的旧锚定）
-pub fn set_anchor(
-    conn: &Connection,
-    profile_id: &str,
-    decision_id: &str,
-) -> AppResult<()> {
+pub fn set_anchor(conn: &Connection, profile_id: &str, decision_id: &str) -> AppResult<()> {
     clear_all_anchors(conn, profile_id)?;
     conn.execute(
         "UPDATE decisions SET is_anchored = 1, anchored_at = ?1 WHERE id = ?2 AND profile_id = ?3",
@@ -86,13 +82,40 @@ pub fn get_recent_decisions(
     profile_id: &str,
     limit: usize,
 ) -> AppResult<Vec<StoredDecision>> {
-    let summaries = decision_store::list_decisions(conn, profile_id)?;
-    let mut results = Vec::new();
+    let mut stmt = conn.prepare(
+        r#"
+        SELECT id, profile_id, created_at,
+               decision_text, time_horizon, context,
+               drama_level, black_swan_enabled,
+               is_anchored, anchored_at,
+               emotion_snapshot, result_json
+        FROM decisions
+        WHERE profile_id = ?1
+        ORDER BY created_at DESC
+        LIMIT ?2
+        "#,
+    )?;
 
-    for s in summaries.iter().take(limit) {
-        if let Some(stored) = decision_store::get_decision(conn, &s.id)? {
-            results.push(stored);
-        }
+    let rows = stmt.query_map(params![profile_id, limit as i64], |row| {
+        Ok(StoredDecision {
+            id: row.get(0)?,
+            profile_id: row.get(1)?,
+            created_at: row.get(2)?,
+            decision_text: row.get(3)?,
+            time_horizon: row.get(4)?,
+            context: row.get(5)?,
+            drama_level: row.get(6)?,
+            black_swan_enabled: row.get(7)?,
+            is_anchored: row.get(8)?,
+            anchored_at: row.get(9)?,
+            emotion_snapshot_json: row.get(10)?,
+            result_json: row.get(11)?,
+        })
+    })?;
+
+    let mut results = Vec::new();
+    for row in rows {
+        results.push(row?);
     }
 
     Ok(results)

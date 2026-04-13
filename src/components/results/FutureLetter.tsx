@@ -42,7 +42,7 @@ function normalizeContent(raw: string): string {
       const match = text.match(/"信件内容"\s*:\s*"([\s\S]*?)"\s*\}/);
       if (match) text = match[1];
     }
-  } catch (e) {}
+  } catch (e) { }
   return text.replace(/\\n/g, '\n').trim();
 }
 
@@ -76,12 +76,7 @@ export default function FutureLetter({ letter }: Props) {
   return (
     <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* 信封外壳 */}
-      <div className="relative max-w-2xl mx-auto">
-        {/* 邮票装饰 */}
-        <div className="absolute -top-3 -right-2 z-10 w-16 h-20 border-2 border-dashed border-muted-foreground/30 rounded-sm bg-card flex flex-col items-center justify-center gap-1 rotate-3 shadow-sm">
-          <span className="text-2xl leading-none">{emoji}</span>
-          <span className="text-[8px] text-muted-foreground font-mono tracking-wider">{t("letter.stamp")}</span>
-        </div>
+      <div className="relative mx-auto w-full max-w-[1180px]">
 
         {/* 信纸主体 */}
         <div
@@ -95,7 +90,7 @@ export default function FutureLetter({ letter }: Props) {
 
           {/* 信纸内容区 */}
           <div
-            className="px-8 py-8 sm:px-12 sm:py-10"
+            className="px-6 py-8 sm:px-10 sm:py-10 lg:px-14 xl:px-16"
             style={{
               backgroundImage:
                 "repeating-linear-gradient(transparent, transparent 31px, hsl(var(--border) / 0.3) 31px, hsl(var(--border) / 0.3) 32px)",
@@ -103,18 +98,26 @@ export default function FutureLetter({ letter }: Props) {
             }}
           >
             {/* 信头 */}
-            <div className="flex items-start justify-between mb-8 pb-4 border-b border-border/50">
-              <div>
+            <div className="mb-8 flex flex-col gap-4 border-b border-border/50 pb-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
                 <h3 className="m-0 text-xl font-semibold text-foreground tracking-wide">
                   {t("letter.title")}
                 </h3>
                 <p className="m-0 mt-1 text-xs text-muted-foreground italic">{t("letter.from_future")}</p>
               </div>
-              <div className="text-right shrink-0">
-                <span className="block text-xs text-muted-foreground">{dateStr}</span>
-                <span className="inline-flex items-center gap-1 mt-1 text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                  {emoji} {toneLabel}
-                </span>
+
+              <div className="flex flex-wrap items-start gap-3 lg:flex-nowrap lg:items-start lg:justify-end">
+                <div className="flex min-w-0 flex-col items-start gap-1 lg:items-end lg:text-right">
+                  <span className="block max-w-full text-xs text-muted-foreground break-words whitespace-normal">{dateStr}</span>
+                  <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                    {emoji} {toneLabel}
+                  </span>
+                </div>
+
+                <div className="flex h-20 w-16 shrink-0 rotate-3 flex-col items-center justify-center gap-1 rounded-sm border-2 border-dashed border-muted-foreground/30 bg-card shadow-sm">
+                  <span className="text-2xl leading-none">{emoji}</span>
+                  <span className="text-[8px] text-muted-foreground font-mono tracking-wider">{t("letter.stamp")}</span>
+                </div>
               </div>
             </div>
 
@@ -156,7 +159,7 @@ export default function FutureLetter({ letter }: Props) {
       </div>
 
       {shine_points.length > 0 && (
-        <div className="max-w-2xl mx-auto mt-6">
+        <div className="mx-auto mt-6 w-full max-w-[1180px]">
           <ShinePoints points={shine_points} />
         </div>
       )}

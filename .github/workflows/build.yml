@@ -3,7 +3,7 @@ name: Build & Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 concurrency:
@@ -11,37 +11,124 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-release-meta:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      release_tag: ${{ steps.meta.outputs.release_tag }}
+      release_name: ${{ steps.meta.outputs.release_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - id: meta
+        name: Validate release metadata
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_REF_TYPE: ${{ github.ref_type }}
+        run: |
+          node <<'EOF'
+          const fs = require("fs");
+          const path = require("path");
+
+          function readJson(relativePath) {
+            return JSON.parse(fs.readFileSync(path.join(process.cwd(), relativePath), "utf8"));
+          }
+
+          function readTomlValue(relativePath, key) {
+            const content = fs.readFileSync(path.join(process.cwd(), relativePath), "utf8");
+            const match = content.match(new RegExp(`^${key}\\s*=\\s*"([^"]+)"`, "m"));
+            if (!match) {
+              throw new Error(`Missing ${key} in ${relativePath}`);
+            }
+            return match[1];
+          }
+
+          const packageVersion = readJson("package.json").version;
+          const tauriConfig = readJson("src-tauri/tauri.conf.json");
+          const cargoVersion = readTomlValue("src-tauri/Cargo.toml", "version");
+          const workerVersion = readTomlValue("python/pyproject.toml", "version");
+
+          const versions = {
+            "package.json": packageVersion,
+            "src-tauri/Cargo.toml": cargoVersion,
+            "src-tauri/tauri.conf.json": tauriConfig.version,
+            "python/pyproject.toml": workerVersion,
+          };
+
+          const distinctVersions = [...new Set(Object.values(versions))];
+          if (distinctVersions.length !== 1) {
+            console.error("Release versions are not aligned:");
+            for (const [file, value] of Object.entries(versions)) {
+              console.error(`- ${file}: ${value}`);
+            }
+            process.exit(1);
+          }
+
+          if (tauriConfig.productName !== "Another Me") {
+            console.error(
+              `src-tauri/tauri.conf.json productName must be \"Another Me\", got \"${tauriConfig.productName}\"`
+            );
+            process.exit(1);
+          }
+
+          const version = distinctVersions[0];
+          const releaseTag = `v${version}`;
+          const releaseName = `Another Me ${releaseTag}`;
+
+          if (process.env.GITHUB_REF_TYPE === "tag" && process.env.GITHUB_REF_NAME !== releaseTag) {
+            console.error(`Tag mismatch: expected ${releaseTag}, got ${process.env.GITHUB_REF_NAME}`);
+            process.exit(1);
+          }
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `release_tag=${releaseTag}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `release_name=${releaseName}\n`);
+          EOF
+
   build-python-worker:
+    needs: validate-release-meta
     strategy:
       matrix:
         include:
           - os: windows-latest
             artifact: python-worker-windows
+            target: x86_64-pc-windows-msvc
           - os: macos-latest
             artifact: python-worker-macos
+            target: aarch64-apple-darwin
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
         with:
-          version: "latest"
+          python-version: "3.14"
 
       - name: Install Python dependencies
         working-directory: python
-        run: uv pip install -e ".[build]" --system
+        run: python -m pip install --upgrade pip; python -m pip install -e . pyinstaller
 
       - name: Build Python worker
         working-directory: python
+        env:
+          ANOTHER_ME_TARGET_TRIPLE: ${{ matrix.target }}
         run: python build.py
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: python/dist/
+          path: src-tauri/binaries/another-me-worker*
 
   build-tauri:
-    needs: build-python-worker
+    needs:
+      - validate-release-meta
+      - build-python-worker
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -70,6 +157,10 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
       - uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.python-artifact }}
@@ -80,9 +171,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "Another Me ${{ github.ref_name }}"
-          releaseBody: "See CHANGELOG for details."
+          tagName: ${{ needs.validate-release-meta.outputs.release_tag }}
+          releaseName: ${{ needs.validate-release-meta.outputs.release_name }}
+          releaseBody: |
+            First public desktop release of Another Me.
+
+            Included in this release:
+            - Windows NSIS installer
+            - macOS DMG bundle
+
+            Core capabilities:
+            - Branching life simulation, result timelines, and future letters
+            - History, life map, and profile correction flows
+            - Local-first storage, model management, and bundled Python NLP worker
           releaseDraft: true
           prerelease: false
-          args: --target ${{ matrix.target }}
+          args: --config src-tauri/tauri.release.conf.json --target ${{ matrix.target }}

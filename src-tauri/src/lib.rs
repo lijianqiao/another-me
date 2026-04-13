@@ -22,7 +22,7 @@ pub mod storage;
 pub mod types;
 pub mod utils;
 
-use crate::ai::gateway::{AIGateway, AIGatewayConfig};
+use crate::ai::gateway::{parse_provider_str, AIGateway, AIGatewayConfig};
 use crate::ai::ollama::OllamaConfig;
 use crate::commands::AppState;
 use crate::python::subprocess_bridge::PythonWorkerManager;
@@ -60,13 +60,12 @@ pub fn run() {
                 (settings.active_model_id, settings.active_provider)
             };
 
-            let provider = match provider_str.as_str() {
-                "openai" => ai::gateway::AIProvider::OpenAI,
-                "anthropic" => ai::gateway::AIProvider::Anthropic,
-                "qwen" => ai::gateway::AIProvider::Qwen,
-                "deepseek" => ai::gateway::AIProvider::DeepSeek,
-                "gemini" => ai::gateway::AIProvider::Gemini,
-                _ => ai::gateway::AIProvider::Ollama,
+            let provider = match parse_provider_str(&provider_str) {
+                Ok(provider) => provider,
+                Err(e) => {
+                    warn!(provider = %provider_str, error = %e, "设置中的 Provider 无效，回退到 Ollama");
+                    ai::gateway::AIProvider::Ollama
+                }
             };
 
             let mut gateway_config = AIGatewayConfig {
@@ -81,12 +80,20 @@ pub fn run() {
             // 如果是云端 Provider，从 credential_store 恢复 API Key + Base URL
             if provider != ai::gateway::AIProvider::Ollama {
                 let conn = db.settings.blocking_lock();
-                let api_key = crate::storage::credential_store::get_api_key(&conn, &provider_str)
-                    .ok()
-                    .flatten();
-                let base_url = crate::storage::credential_store::get_base_url(&conn, &provider_str)
-                    .ok()
-                    .flatten();
+                let api_key = match crate::storage::credential_store::get_api_key(&conn, &provider_str) {
+                    Ok(key) => key,
+                    Err(e) => {
+                        warn!(provider = %provider_str, error = %e, "恢复云端 Provider API Key 失败，回退到 Ollama");
+                        None
+                    }
+                };
+                let base_url = match crate::storage::credential_store::get_base_url(&conn, &provider_str) {
+                    Ok(url) => url,
+                    Err(e) => {
+                        warn!(provider = %provider_str, error = %e, "恢复云端 Provider Base URL 失败，使用空 Base URL");
+                        None
+                    }
+                };
 
                 if let Some(key) = api_key {
                     gateway_config.cloud = Some(ai::gateway::CloudProviderConfig {

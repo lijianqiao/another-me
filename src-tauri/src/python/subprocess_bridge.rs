@@ -15,10 +15,10 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
 use std::process::Stdio;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, BufWriter};
 
-use tokio::process::{Child, ChildStdin, ChildStdout, Command};
+use tokio::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
 use tokio::time::timeout;
 use tracing::{debug, error, info, warn};
@@ -57,14 +57,10 @@ impl PythonBridge {
             Command::new(&sidecar)
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
-                .stderr(Stdio::null())
+                .stderr(Stdio::piped())
                 .kill_on_drop(true)
                 .spawn()
-                .map_err(|e| {
-                    AppError::PythonBridge(format!(
-                        "Sidecar 启动失败: {e}"
-                    ))
-                })?
+                .map_err(|e| AppError::PythonBridge(format!("Sidecar 启动失败: {e}")))?
         } else {
             let main_py = python_dir.join("main.py");
             if !main_py.exists() {
@@ -83,17 +79,13 @@ impl PythonBridge {
                 .current_dir(python_dir)
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
-                .stderr(Stdio::null())
+                .stderr(Stdio::piped())
                 .env("PYTHONUNBUFFERED", "1")
                 .env("PYTHONUTF8", "1")
                 .env("PYTHONIOENCODING", "utf-8")
                 .kill_on_drop(true)
                 .spawn()
-                .map_err(|e| {
-                    AppError::PythonBridge(format!(
-                        "Python 进程启动失败: {e}"
-                    ))
-                })?
+                .map_err(|e| AppError::PythonBridge(format!("Python 进程启动失败: {e}")))?
         };
 
         let stdin = child
@@ -104,6 +96,9 @@ impl PythonBridge {
             .stdout
             .take()
             .ok_or_else(|| AppError::PythonBridge("获取 stdout 失败".into()))?;
+        if let Some(stderr) = child.stderr.take() {
+            spawn_stderr_logger(stderr, "Python Worker");
+        }
 
         let mut io = BridgeIo {
             stdin: BufWriter::new(stdin),
@@ -131,9 +126,8 @@ impl PythonBridge {
             payload,
         };
 
-        let request_json = serde_json::to_string(&request).map_err(|e| {
-            AppError::PythonBridge(format!("序列化请求失败: {e}"))
-        })?;
+        let request_json = serde_json::to_string(&request)
+            .map_err(|e| AppError::PythonBridge(format!("序列化请求失败: {e}")))?;
 
         debug!(cmd = command, "发送请求到 Python Worker");
 
@@ -144,17 +138,18 @@ impl PythonBridge {
             io.stdin
                 .write_all(format!("{request_json}\n").as_bytes())
                 .await
-                .map_err(|e| {
-                    AppError::PythonBridge(format!("写入 stdin 失败: {e}"))
-                })?;
-            io.stdin.flush().await.map_err(|e| {
-                AppError::PythonBridge(format!("flush stdin 失败: {e}"))
-            })?;
+                .map_err(|e| AppError::PythonBridge(format!("写入 stdin 失败: {e}")))?;
+            io.stdin
+                .flush()
+                .await
+                .map_err(|e| AppError::PythonBridge(format!("flush stdin 失败: {e}")))?;
 
             let mut line = String::new();
-            let n = io.stdout.read_line(&mut line).await.map_err(|e| {
-                AppError::PythonBridge(format!("读取 stdout 失败: {e}"))
-            })?;
+            let n = io
+                .stdout
+                .read_line(&mut line)
+                .await
+                .map_err(|e| AppError::PythonBridge(format!("读取 stdout 失败: {e}")))?;
             if n == 0 {
                 return Err(AppError::PythonBridge(
                     "Python Worker stdout 已关闭，进程可能已退出".into(),
@@ -170,13 +165,12 @@ impl PythonBridge {
             ))
         })??;
 
-        let resp: WorkerResponse =
-            serde_json::from_str(response_line.trim()).map_err(|e| {
-                AppError::PythonBridge(format!(
-                    "解析响应失败: {e}, 原文: {}",
-                    &response_line[..response_line.len().min(200)]
-                ))
-            })?;
+        let resp: WorkerResponse = serde_json::from_str(response_line.trim()).map_err(|e| {
+            AppError::PythonBridge(format!(
+                "解析响应失败: {e}, 原文: {}",
+                truncate_chars(&response_line, 200)
+            ))
+        })?;
 
         if resp.success == Some(true) {
             Ok(resp.result.unwrap_or(serde_json::Value::Null))
@@ -190,9 +184,7 @@ impl PythonBridge {
     /// 心跳检测
     pub async fn is_alive(&self) -> bool {
         match self.call("ping", serde_json::json!({})).await {
-            Ok(result) => {
-                result.get("pong").and_then(|v| v.as_bool()) == Some(true)
-            }
+            Ok(result) => result.get("pong").and_then(|v| v.as_bool()) == Some(true),
             Err(e) => {
                 error!(error = %e, "Python Worker 心跳失败");
                 false
@@ -202,26 +194,43 @@ impl PythonBridge {
 
     /// 在 binaries/ 目录查找 Sidecar 可执行文件
     fn find_sidecar(python_dir: &PathBuf) -> Option<PathBuf> {
-        let binaries_dir = python_dir
-            .parent()?      // 项目根目录
-            .join("src-tauri")
-            .join("binaries");
-
-        if !binaries_dir.exists() {
-            return None;
-        }
-
         let exe_suffix = if cfg!(windows) { ".exe" } else { "" };
 
-        let entries = std::fs::read_dir(&binaries_dir).ok()?;
-        for entry in entries.flatten() {
-            let name = entry.file_name();
-            let name_str = name.to_string_lossy();
-            if name_str.starts_with("another-me-worker") && name_str.ends_with(exe_suffix) {
-                let path = entry.path();
-                if path.is_file() {
-                    debug!(path = %path.display(), "找到 Sidecar 可执行文件");
-                    return Some(path);
+        let mut candidate_dirs = Vec::new();
+
+        if let Some(project_root) = python_dir.parent() {
+            candidate_dirs.push(project_root.join("src-tauri").join("binaries"));
+        }
+
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(exe_dir) = exe_path.parent() {
+                candidate_dirs.push(exe_dir.to_path_buf());
+
+                if let Some(contents_dir) = exe_dir.parent() {
+                    candidate_dirs.push(contents_dir.join("Resources"));
+                }
+            }
+        }
+
+        for dir in candidate_dirs {
+            if !dir.exists() {
+                continue;
+            }
+
+            let entries = match std::fs::read_dir(&dir) {
+                Ok(entries) => entries,
+                Err(_) => continue,
+            };
+
+            for entry in entries.flatten() {
+                let name = entry.file_name();
+                let name_str = name.to_string_lossy();
+                if name_str.starts_with("another-me-worker") && name_str.ends_with(exe_suffix) {
+                    let path = entry.path();
+                    if path.is_file() {
+                        debug!(path = %path.display(), "找到 Sidecar 可执行文件");
+                        return Some(path);
+                    }
                 }
             }
         }
@@ -235,9 +244,11 @@ async fn wait_ready(io: &mut BridgeIo) -> Result<(), AppError> {
     timeout(READY_TIMEOUT, async {
         loop {
             let mut line = String::new();
-            let n = io.stdout.read_line(&mut line).await.map_err(|e| {
-                AppError::PythonBridge(format!("读取 ready 信号失败: {e}"))
-            })?;
+            let n = io
+                .stdout
+                .read_line(&mut line)
+                .await
+                .map_err(|e| AppError::PythonBridge(format!("读取 ready 信号失败: {e}")))?;
             if n == 0 {
                 return Err(AppError::PythonBridge(
                     "Python Worker stdout 已关闭，进程可能启动失败".into(),
@@ -253,6 +264,12 @@ async fn wait_ready(io: &mut BridgeIo) -> Result<(), AppError> {
                 Ok(r) => {
                     if r.ready == Some(true) {
                         return Ok(());
+                    }
+                    if r.success == Some(false) {
+                        let err = r.error.unwrap_or_else(|| "未知启动错误".to_string());
+                        return Err(AppError::PythonBridge(format!(
+                            "Python Worker 启动失败: {err}"
+                        )));
                     }
                     warn!(?r, "跳过非 ready JSON 行");
                 }
@@ -273,6 +290,32 @@ async fn wait_ready(io: &mut BridgeIo) -> Result<(), AppError> {
             READY_TIMEOUT.as_secs()
         ))
     })?
+}
+
+fn truncate_chars(text: &str, max_chars: usize) -> String {
+    text.chars().take(max_chars).collect()
+}
+
+fn spawn_stderr_logger(stderr: ChildStderr, source: &'static str) {
+    tokio::spawn(async move {
+        let mut reader = BufReader::new(stderr);
+        loop {
+            let mut line = String::new();
+            match reader.read_line(&mut line).await {
+                Ok(0) => break,
+                Ok(_) => {
+                    let trimmed = line.trim();
+                    if !trimmed.is_empty() {
+                        warn!(source = source, line = %trimmed, "子进程 stderr 输出");
+                    }
+                }
+                Err(e) => {
+                    warn!(source = source, error = %e, "读取子进程 stderr 失败");
+                    break;
+                }
+            }
+        }
+    });
 }
 
 /// Python Worker 生命周期管理器（lazy start + 手动失效 + 自动重启）
