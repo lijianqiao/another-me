@@ -1,6 +1,6 @@
 [package]
 name = "another-me"
-version = "1.0.1"
+version = "1.1.0"
 description = "Another Me — 本地化人生决策推演引擎"
 authors = ["另一个我 contributors"]
 edition = "2021"
