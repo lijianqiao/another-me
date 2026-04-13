@@ -119,8 +119,8 @@ export default function OnboardingPage() {
   };
 
   return (
-    <section className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] w-full py-10 px-4 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex gap-2.5 mb-8 w-full max-w-md justify-center">
+    <section className="fixed inset-0 z-50 flex flex-col items-center justify-center min-h-screen w-full bg-background py-10 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex gap-2.5 mb-8 w-full max-w-lg justify-center">
         {Array.from({ length: TOTAL_STEPS }, (_, i) => (
           <div
             key={i}
@@ -130,7 +130,7 @@ export default function OnboardingPage() {
         ))}
       </div>
 
-      <div className="bg-card w-full max-w-md p-8 rounded-2xl shadow-sm border border-border flex flex-col items-center text-center transition-all duration-300">
+      <div className="bg-card w-full max-w-lg p-8 rounded-2xl shadow-lg border border-border flex flex-col items-center text-center transition-all duration-300">
         <div className="w-full flex-1 min-h-[50vh]">
           {step === 0 && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center pt-8">

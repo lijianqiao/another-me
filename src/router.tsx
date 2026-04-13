@@ -68,11 +68,14 @@ function wrap(El: React.LazyExoticComponent<React.ComponentType>) {
 
 export const router = createHashRouter([
   {
+    path: "/onboarding",
+    element: wrap(OnboardingPage),
+  },
+  {
     path: "/",
     element: <AppShell />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: "onboarding", element: wrap(OnboardingPage) },
       { path: "simulate", element: wrap(SimulatePage) },
       { path: "results", element: wrap(ResultsPage) },
       { path: "history", element: wrap(HistoryPage) },
